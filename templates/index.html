@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Twitter Data Analysis</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <a class="navbar-brand" href="#">Twitter Analysis</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item"><a class="nav-link" href="#hashtags">Hashtags</a></li>
+                <li class="nav-item"><a class="nav-link" href="#influencers">Influencers</a></li>
+                <li class="nav-item"><a class="nav-link" href="#timeline">Timeline</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container" style="margin-top: 80px;">
+        <!-- Introduction Section -->
+        <section id="introduction">
+            <h1>Exploring Russian Information Operations in North Africa</h1>
+            <p class="lead">Dive into the data to uncover key hashtags, influencers, and tweet timings associated with the operation.</p>
+        </section>
+
+        <!-- Hashtags Section -->
+        <section id="hashtags" class="mt-5">
+            <h2>Key Hashtags Used in the Data</h2>
+            <div id="hashtags-chart"></div>
+        </section>
+
+        <!-- Influencers Section -->
+        <section id="influencers" class="mt-5">
+            <h2>Key Influencers in the Data</h2>
+            <div id="influencers-chart"></div>
+        </section>
+
+        <!-- Timeline Section -->
+        <section id="timeline" class="mt-5">
+            <h2>Posting Times of Tweets</h2>
+            <div id="timeline-chart"></div>
+        </section>
+    </div>
+
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <!-- jQuery and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script>
+        document.querySelectorAll('a.nav-link').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>   
+</body>
+</html>

@@ -1,0 +1,47 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+section {
+    margin-bottom: 50px;
+}
+
+h2 {
+    margin-top: 40px;
+}
+
+#hashtags-chart, #influencers-chart, #timeline-chart {
+    margin-top: 20px;
+}
+
+.bar {
+    fill: steelblue;
+}
+
+.axis text {
+    font-size: 12px;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+}
+
+@media (max-width: 800px) {
+    svg {
+        width: 100%;
+    }
+
+    .axis text {
+        font-size: 10px;
+    }
+
+    .navbar-nav .nav-link {
+        font-size: 14px;
+    }
+}
