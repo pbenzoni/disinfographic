@@ -49,7 +49,7 @@ def get_top_named_entities():
         avg_sentiment=('sentiment_score', 'mean')
     ).reset_index()
     ne_grouped = ne_grouped.rename(columns={'named_entities_list': 'named_entity'})
-    top_named_entities = ne_grouped.sort_values(by='count', ascending=False).head(10)
+    top_named_entities = ne_grouped.sort_values(by='count', ascending=False).head(25)
     return top_named_entities.to_dict(orient='records')
 
 def get_top_hashtags():
@@ -64,41 +64,241 @@ def get_top_hashtags():
         avg_sentiment=('sentiment_score', 'mean')
     ).reset_index()
     ht_grouped = ht_grouped.rename(columns={'hashtags_list': 'hashtag'})
-    top_hashtags = ht_grouped.sort_values(by='count', ascending=False).head(10)
+    top_hashtags = ht_grouped.sort_values(by='count', ascending=False).head(25)
     return top_hashtags.to_dict(orient='records')
 
-def get_tweets_by_named_entity(ne):
-    # Filter tweets containing the named entity
-    df_ne = df.dropna(subset=['named_entities'])
-    df_ne['named_entities_list'] = df_ne['named_entities'].apply(ast.literal_eval)
-    filtered_tweets = df_ne[df_ne['named_entities_list'].apply(lambda ents: ne in ents)]
-    # Include sentiment and hashtags
-    tweets_list = filtered_tweets[['tweet_text', 'tweetid', 'sentiment', 'sentiment_score', 'hashtags']].to_dict(orient='records')
-    # Get most common hashtags
+def get_top_mentions():
+    # Extract mentions and sentiment scores
+    df_mentions = df[['user_mentions', 'sentiment_score']].dropna(subset=['user_mentions'])
+    df_mentions['mentions_list'] = df_mentions['user_mentions'].apply(ast.literal_eval)
+    df_mentions = df_mentions.explode('mentions_list')
+    
+    # Compute counts and average sentiment
+    mentions_grouped = df_mentions.groupby('mentions_list').agg(
+        count=('mentions_list', 'size'),
+        avg_sentiment=('sentiment_score', 'mean')
+    ).reset_index()
+    mentions_grouped = mentions_grouped.rename(columns={'mentions_list': 'mention'})
+    top_mentions = mentions_grouped.sort_values(by='count', ascending=False).head(10)
+    return top_mentions.to_dict(orient='records')
+
+def get_tweet_counts_by_month():
+   
+    # Ensure 'created_at' is in datetime format
+    df['tweet_time'] = pd.to_datetime(df['tweet_time'])
+
+    
+    # Create a 'month_year' column
+    df['month_year'] = df['tweet_time'].dt.to_period('M')
+    
+    # Group by 'month_year' and count tweets
+    df_month = df.groupby('month_year').agg(
+        count=('tweetid', 'size')
+    ).reset_index()
+    
+    # Convert 'month_year' back to string for JSON serialization
+    df_month['month_year'] = df_month['month_year'].astype(str)
+    
+    # Sort by 'month_year'
+    df_month = df_month.sort_values('month_year')
+    
+    return df_month.to_dict(orient='records')
+
+def get_tweets_by_month_year(month_year):
+    # Ensure 'created_at' is in datetime format
+    df['tweet_time'] = pd.to_datetime(df['tweet_time'])
+    
+    # Create a 'month_year' column
+    df['month_year'] = df['tweet_time'].dt.to_period('M').astype(str)
+    
+    # Filter tweets for the given 'month_year'
+    filtered_tweets = df[df['month_year'] == month_year]
+    
+    # sort by likes
+    filtered_tweets = filtered_tweets.sort_values(by='like_count', ascending=False)
+    
+    # Include relevant tweet information
+    tweets_list = filtered_tweets[['tweet_text', 'tweetid', 'sentiment', 'sentiment_score', 'hashtags', 'tweet_time']].to_dict(orient='records')
+    
+    return {
+        'tweets': tweets_list
+    }
+
+
+def get_tweets_by_mention(mention):
+    # Filter tweets containing the mention
+    df_mention = df.dropna(subset=['user_mentions'])
+    df_mention['mentions_list'] = df_mention['user_mentions'].apply(ast.literal_eval)
+    filtered_tweets = df_mention[df_mention['mentions_list'].apply(lambda mentions: mention in mentions)]
+
+    # sort by likes
+    filtered_tweets = filtered_tweets.sort_values(by='like_count', ascending=False)
+
+    # Include additional information
+    tweets_list = filtered_tweets[['tweet_text', 'tweetid', 'user_screen_name', 'tweet_language', 'like_count', 'retweet_count', 'sentiment_score', 'hashtags', 'user_mentions']].to_dict(orient='records')
+
+    # Aggregate stats
+    total_likes = filtered_tweets['like_count'].sum()
+    total_retweets = filtered_tweets['retweet_count'].sum()
+
+    # Co-occurring users mentioned
+    mentions_series = filtered_tweets['user_mentions'].dropna().apply(ast.literal_eval).explode()
+    mentions_counts = mentions_series.value_counts().head(5)
+    cooccurring_users = mentions_counts.index.tolist()
+
+    #co-occurring hashtags
     hashtags_series = filtered_tweets['hashtags'].dropna().apply(ast.literal_eval).explode()
     hashtag_counts = hashtags_series.value_counts().head(5)
-    common_hashtags = hashtag_counts.index.tolist()
+    cooccurring_hashtags = hashtag_counts.index.tolist()
+
     return {
         'tweets': tweets_list,
-        'common_hashtags': common_hashtags
+        'total_likes': int(total_likes),
+        'total_retweets': int(total_retweets),
+        'cooccurring_users': cooccurring_users,
+        'cooccurring_hashtags': cooccurring_hashtags
     }
+
+# def get_tweets_by_named_entity(ne):
+#     # Filter tweets containing the named entity
+#     df_ne = df.dropna(subset=['named_entities'])
+#     df_ne['named_entities_list'] = df_ne['named_entities'].apply(ast.literal_eval)
+#     filtered_tweets = df_ne[df_ne['named_entities_list'].apply(lambda ents: ne in ents)]
+#     # Include sentiment and hashtags
+#     tweets_list = filtered_tweets[['tweet_text', 'tweetid', 'sentiment', 'sentiment_score', 'hashtags']].to_dict(orient='records')
+#     # Get most common hashtags
+#     hashtags_series = filtered_tweets['hashtags'].dropna().apply(ast.literal_eval).explode()
+#     hashtag_counts = hashtags_series.value_counts().head(5)
+#     common_hashtags = hashtag_counts.index.tolist()
+#     return {
+#         'tweets': tweets_list,
+#         'common_hashtags': common_hashtags
+#     }
 
 def get_tweets_by_hashtag(hashtag):
     # Filter tweets containing the hashtag
-    df_ht = df.dropna(subset=['hashtags'])
-    df_ht['hashtags_list'] = df_ht['hashtags'].apply(ast.literal_eval)
-    filtered_tweets = df_ht[df_ht['hashtags_list'].apply(lambda tags: hashtag in tags)]
-    # Include sentiment and named entities
-    tweets_list = filtered_tweets[['tweet_text', 'tweetid', 'sentiment', 'sentiment_score', 'named_entities']].to_dict(orient='records')
-    # Get most common named entities
-    ne_series = filtered_tweets['named_entities'].dropna().apply(ast.literal_eval).explode()
-    ne_counts = ne_series.value_counts().head(5)
-    common_entities = ne_counts.index.tolist()
+    df_hashtag = df.dropna(subset=['hashtags'])
+    df_hashtag['hashtags_list'] = df_hashtag['hashtags'].apply(ast.literal_eval)
+    filtered_tweets = df_hashtag[df_hashtag['hashtags_list'].apply(lambda hashtags: hashtag in hashtags)]
+
+    # sort df by likes
+    filtered_tweets = filtered_tweets.sort_values(by='like_count', ascending=False)
+
+    # Include additional information
+    tweets_list = filtered_tweets[['tweet_text', 'tweetid', 'user_screen_name', 'tweet_language', 'like_count', 'retweet_count', 'sentiment_score', 'hashtags', 'user_mentions']].to_dict(orient='records')
+
+    # Aggregate stats
+    total_likes = filtered_tweets['like_count'].sum()
+    total_retweets = filtered_tweets['retweet_count'].sum()
+
+    # Co-occurring users mentioned
+    mentions_series = filtered_tweets['user_mentions'].dropna().apply(ast.literal_eval).explode()
+    mentions_counts = mentions_series.value_counts().head(5)
+    cooccurring_users = mentions_counts.index.tolist()
+
+    #co-occurring hashtags
+    hashtags_series = filtered_tweets['hashtags'].dropna().apply(ast.literal_eval).explode()
+    hashtag_counts = hashtags_series.value_counts().head(5)
+    cooccurring_hashtags = hashtag_counts.index.tolist()
+
     return {
         'tweets': tweets_list,
-        'common_entities': common_entities
+        'total_likes': int(total_likes),
+        'total_retweets': int(total_retweets),
+        'cooccurring_users': cooccurring_users,
+        'cooccurring_hashtags': cooccurring_hashtags
     }
 
+
+def get_top_users():
+    # Existing code to get top users
+    df_users = df.groupby('user_screen_name').agg({
+        'tweetid': 'count',
+        'like_count': 'sum',
+        'retweet_count': 'sum',
+        'follower_count': 'max'
+    }).reset_index()
+    df_users = df_users.rename(columns={
+        'tweetid': 'tweet_volume',
+        'user_screen_name': 'user'
+    })
+    # Get top 10 users by tweet volume
+    top_users = df_users.sort_values(by='tweet_volume', ascending=False).head(10)
+    return top_users.to_dict(orient='records')
+
+def get_user_details(username):
+    # Filter tweets by the user
+
+    df_user = df[df['user_screen_name'] == username]
+
+    # sort by likes
+    df_user = df_user.sort_values(by='like_count', ascending=False)
+
+
+    # Include additional information
+    tweets_list = df_user[['tweet_text', 'tweetid', 'user_screen_name', 'tweet_language', 'like_count', 'retweet_count', 'sentiment_score', 'hashtags', 'user_mentions']].to_dict(orient='records')
+
+
+
+    # Aggregate stats
+    total_likes = df_user['like_count'].sum()
+    total_retweets = df_user['retweet_count'].sum()
+
+    # Co-occurring users mentioned
+    mentions_series = df_user['user_mentions'].dropna().apply(ast.literal_eval).explode()
+    mentions_counts = mentions_series.value_counts().head(5)
+    cooccurring_users = mentions_counts.index.tolist()
+
+    # Top hashtags used by the user
+    hashtags_series = df_user['hashtags'].dropna().apply(ast.literal_eval).explode()
+    hashtag_counts = hashtags_series.value_counts().head(5)
+    top_hashtags = hashtag_counts.index.tolist()
+
+    return {
+        'tweets': tweets_list,
+        'top_hashtags': top_hashtags,
+        'total_likes': int(total_likes),
+        'total_retweets': int(total_retweets),
+        'cooccurring_users': cooccurring_users,
+        
+    }
+
+# def get_retweet_network():
+#     # Filter tweets containing the hashtag 'Syria'
+#     df_filtered = df[df['hashtags'].str.contains('Syria', na=False, case=False)]
+    
+#     # Keep only retweets
+#     df_retweets = df_filtered[df_filtered['is_retweet'] == True]
+    
+#     # Build edges: retweeter -> original tweeter
+#     edges = df_retweets[['user_screen_name', 'retweet_userid']].dropna()
+#     edges = edges.rename(columns={
+#         'user_screen_name': 'source_user',
+#         'retweet_userid': 'target_userid'
+#     })
+    
+#     # Map retweet_userid back to user_screen_name
+#     userid_to_screen_name = df[['userid', 'user_screen_name']].drop_duplicates()
+#     userid_to_screen_name_dict = dict(zip(userid_to_screen_name['userid'], userid_to_screen_name['user_screen_name']))
+#     edges['target_user'] = edges['target_userid'].map(userid_to_screen_name_dict)
+    
+#     # Remove edges with missing target_user
+#     edges = edges.dropna(subset=['target_user'])
+    
+#     # Prepare nodes
+#     nodes = pd.DataFrame({'id': pd.concat([edges['source_user'], edges['target_user']]).unique()})
+    
+#     # Prepare edges
+#     edges = edges[['source_user', 'target_user']].rename(columns={
+#         'source_user': 'source',
+#         'target_user': 'target'
+#     })
+    
+#     # Convert to dictionaries
+#     nodes_list = nodes.to_dict(orient='records')
+#     edges_list = edges.to_dict(orient='records')
+    
+#     return {'nodes': nodes_list, 'links': edges_list}
 
 # Route for the home page
 @app.route('/')
@@ -131,6 +331,16 @@ def top_hashtags():
     hashtags_list = get_top_hashtags()
     return jsonify(hashtags_list)
 
+@app.route('/api/top_mentions')
+def top_mentions():
+    mentions_list = get_top_mentions()
+    return jsonify(mentions_list)
+
+@app.route('/api/tweets_by_mention/<path:mention>')
+def tweets_by_mention_route(mention):
+    data = get_tweets_by_mention(mention.strip())
+    return jsonify(data)
+
 @app.route('/api/tweets_by_named_entity/<path:ne>')
 def tweets_by_named_entity(ne):
     tweets_list = get_tweets_by_named_entity(ne.strip())
@@ -141,8 +351,25 @@ def tweets_by_hashtag(hashtag):
     tweets_list = get_tweets_by_hashtag(hashtag.strip())
     return jsonify(tweets_list)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.route('/api/tweet_counts_by_month')
+def tweet_counts_by_month():
+    counts_list = get_tweet_counts_by_month()
+    return jsonify(counts_list)
+
+@app.route('/api/tweets_by_month_year/<path:month_year>')
+def tweets_by_month_year_route(month_year):
+    data = get_tweets_by_month_year(month_year.strip())
+    return jsonify(data)
+
+@app.route('/api/top_users')
+def top_users():
+    users_list = get_top_users()
+    return jsonify(users_list)
+
+@app.route('/api/user_details/<path:username>')
+def user_details(username):
+    data = get_user_details(username.strip())
+    return jsonify(data)
 
 if __name__ == '__main__':
     app.run(debug=True)

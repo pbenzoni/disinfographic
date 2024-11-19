@@ -118,11 +118,25 @@ h2 {
 
 .bar-count {
     position: absolute;
-    right: -50px;
-    top: 50%;
+    right: 5px;
+    top: 24px;
     transform: translateY(-50%);
     font-weight: bold;
 }
+/* add a backgropund to bar counts and float above text*/
+.bar-count {
+    background-color: #f9f9f9;
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 1;
+}
+
+/* add a background color to the bar when hovered */
+.bar:hover {
+    background-color: #f9f9f9;
+}
+
+
 
 .bar-content {
     display: none;
@@ -162,4 +176,146 @@ h2 {
 /* Adjust the size of bars based on frequency */
 .bar[data-count] {
     width: calc(20% + (80% * (var(--count) / var(--max-count))));
+}
+/* Styles for time-based bar chart */
+.time-bar {
+    cursor: pointer;
+}
+
+.time-bar.expanded {
+    fill: #ff7f0e;
+}
+
+/* Style for bar-content when used with SVG charts */
+.bar-content {
+    margin-top: 10px;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 5px;
+}
+/* Styles for expandable rows in the users table */
+.user-row {
+    cursor: pointer;
+}
+
+.user-row.expanded {
+    background-color: #f1f1f1;
+}
+
+.expandable-row td {
+    padding: 0 !important;
+    border-top: none;
+}
+
+.user-content {
+    padding: 15px;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+}
+
+.user-content .user-tweets .tweet {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    color: #333;
+}
+
+.user-content .user-tweets .tweet-text {
+    font-size: 14px;
+    margin: 0;
+}
+
+.user-content .user-hashtags span {
+    display: inline-block;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    padding: 3px 7px;
+    margin: 3px 2px;
+    font-size: 12px;
+}
+
+#tweet-details {
+    margin-top: 20px;
+}
+
+#tweet-details table {
+    width: 100%;
+}
+
+#tweet-details th, #tweet-details td {
+    text-align: left;
+    vertical-align: top;
+}
+
+#tweet-details td {
+    word-break: break-word;
+}
+
+#tweet-details th {
+    background-color: #f2f2f2;
+}
+
+#tweet-details td:nth-child(3) {
+    text-align: center;
+}
+.highlight {
+    background-color: black;
+    color: white;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.summary {
+    margin-bottom: 15px;
+}
+
+.stats, .cooccurring-users {
+    margin-bottom: 10px;
+}
+
+.cooccurring-users span {
+    display: inline-block;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    padding: 3px 7px;
+    margin: 3px 2px;
+    font-size: 12px;
+}
+
+.tweets-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.tweets-table th, .tweets-table td {
+    border: 1px solid #dee2e6;
+    padding: 8px;
+}
+
+.tweets-table th {
+    cursor: pointer;
+    background-color: #f9f9f9;
+}
+
+.tweets-table th.asc::after {
+    content: " ▲";
+}
+
+.tweets-table th.desc::after {
+    content: " ▼";
+}
+
+.tweet-text {
+    max-width: 400px;
+    word-wrap: break-word;
+}
+/* Table Text Styles */
+.tweets-table td, .tweets-table th {
+    color: black;
+}
+
+/* Adjust tweet row styles */
+.tweets-table tr {
+    color: black;
 }
