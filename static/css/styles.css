@@ -14,12 +14,21 @@ h2 {
     margin-top: 40px;
 }
 
-#hashtags-chart, #influencers-chart, #timeline-chart {
+#hashtags-chart, #influencers-chart, #timeline-chart, #entities-chart, #top-hashtags-chart {
     margin-top: 20px;
+    display: inline-block;
+    vertical-align: top;
+    width: 45%;
+    margin-right: 5%;
 }
 
 .bar {
     fill: steelblue;
+}
+
+.entity-bar:hover .bar,
+.hashtag-bar:hover .bar {
+    fill: darkblue;
 }
 
 .axis text {
@@ -30,6 +39,41 @@ h2 {
 .axis line {
     fill: none;
     stroke: #000;
+}
+
+.tweet {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.tweet.positive {
+    background-color: #d4edda; /* Light green */
+}
+
+.tweet.negative {
+    background-color: #f8d7da; /* Light red */
+}
+
+.tweet.neutral {
+    background-color: #fff3cd; /* Light yellow */
+}
+
+.hashtags span, .entities span {
+    display: inline-block;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    padding: 3px 7px;
+    margin: 3px 2px;
+    font-size: 12px;
+}
+
+.entity-bar, .hashtag-bar {
+    cursor: pointer;
+}
+
+#entities-chart-tweets, #top-hashtags-chart-tweets {
+    margin-top: 20px;
 }
 
 @media (max-width: 800px) {
@@ -44,4 +88,78 @@ h2 {
     .navbar-nav .nav-link {
         font-size: 14px;
     }
+
+    #hashtags-chart, #influencers-chart, #timeline-chart, #entities-chart, #top-hashtags-chart {
+        width: 100%;
+        margin-right: 0;
+    }
+}
+/* Bar Chart Styles */
+.bar-chart {
+    margin-top: 20px;
+}
+
+.bar {
+    color: gray;
+    margin: 5px 0;
+    padding: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.bar.expanded {
+    width: 100% !important;
+}
+
+.bar-title {
+    margin: 0;
+}
+
+.bar-count {
+    position: absolute;
+    right: -50px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: bold;
+}
+
+.bar-content {
+    display: none;
+    margin-top: 10px;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.bar.expanded .bar-content {
+    display: block;
+}
+
+/* Tweet Styles inside bar-content */
+.bar-content .tweet {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    color: #333;
+}
+
+.bar-content .tweet-text {
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Hashtags and Entities */
+.hashtags span, .entities span {
+    display: inline-block;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    padding: 3px 7px;
+    margin: 3px 2px;
+    font-size: 12px;
+}
+
+/* Adjust the size of bars based on frequency */
+.bar[data-count] {
+    width: calc(20% + (80% * (var(--count) / var(--max-count))));
 }

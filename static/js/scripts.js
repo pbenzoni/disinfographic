@@ -21,141 +21,146 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             createTimelineChart(data);
         });
+    // Fetch and display top named entities
+    fetch('/api/top_named_entities')
+        .then(response => response.json())
+        .then(data => {
+            createBarChart(data, 'named-entities-chart', 'named_entity', 'Named Entity');
+        });
+
+    // Fetch and display top hashtags
+    fetch('/api/top_hashtags')
+        .then(response => response.json())
+        .then(data => {
+            createBarChart(data, 'hashtags-bar-chart', 'hashtag', 'Hashtag');
+        });
 });
 
-// Function to create Hashtags Chart
-function createHashtagsChart(data) {
-    let svgWidth = 800, svgHeight = 500;
-    let svg = d3.select("#hashtags-chart").append("svg")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight);
+// Function to create a bar chart
+function createBarChart(data, containerId, labelKey, labelName) {
+    let container = document.getElementById(containerId);
+    container.className = 'bar-chart';
 
-    let margin = { top: 20, right: 20, bottom: 150, left: 60 },
-        width = svgWidth - margin.left - margin.right,
-        height = svgHeight - margin.top - margin.bottom;
+    // Find the maximum count to set bar widths
+    let maxCount = Math.max(...data.map(d => d.count));
 
-    let g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+    data.forEach(item => {
+        let bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.setProperty('--count', item.count);
+        bar.style.setProperty('--max-count', maxCount);
+        bar.dataset.count = item.count;
 
-    let x = d3.scaleBand()
-        .domain(data.map(d => d.hashtag))
-        .range([0, width])
-        .padding(0.1);
+        // Set background color based on avg_sentiment
+        let avgSentiment = item.avg_sentiment || 0;
+        let barColor = sentimentToColor(avgSentiment);
+        bar.style.backgroundColor = barColor;
 
-    let y = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.count)])
-        .nice()
-        .range([height, 0]);
+        let title = document.createElement('h4');
+        title.className = 'bar-title';
+        title.textContent = item[labelKey];
+        bar.appendChild(title);
 
-    g.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x))
-        .selectAll("text")
-        .attr("transform", "rotate(-45)")
-        .style("text-anchor", "end");
+        let countSpan = document.createElement('span');
+        countSpan.className = 'bar-count';
+        countSpan.textContent = item.count;
+        bar.appendChild(countSpan);
 
-    g.append("g")
-        .call(d3.axisLeft(y));
+        // Content that will be displayed when the bar is expanded
+        let content = document.createElement('div');
+        content.className = 'bar-content';
+        bar.appendChild(content);
 
-    g.selectAll(".bar")
-        .data(data)
-        .enter().append("rect")
-        .attr("class", "bar")
-        .attr("x", d => x(d.hashtag))
-        .attr("y", d => y(d.count))
-        .attr("width", x.bandwidth())
-        .attr("height", d => height - y(d.count));
-}
+        // Add click event to expand/collapse the bar
+        bar.addEventListener('click', function() {
+            if (bar.classList.contains('expanded')) {
+                bar.classList.remove('expanded');
+                content.innerHTML = ''; // Clear content
+            } else {
+                // Collapse any other expanded bars in this chart
+                let expandedBars = container.querySelectorAll('.bar.expanded');
+                expandedBars.forEach(expandedBar => {
+                    expandedBar.classList.remove('expanded');
+                    expandedBar.querySelector('.bar-content').innerHTML = '';
+                });
 
-// Function to create Influencers Chart
-function createInfluencersChart(data) {
-    let svgWidth = 800, svgHeight = 500;
-    let svg = d3.select("#influencers-chart").append("svg")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight);
+                bar.classList.add('expanded');
 
-    let margin = { top: 20, right: 20, bottom: 150, left: 60 },
-        width = svgWidth - margin.left - margin.right,
-        height = svgHeight - margin.top - margin.bottom;
+                // Fetch and display tweets associated with this named entity or hashtag
+                let endpoint = labelKey === 'named_entity' ? '/api/tweets_by_named_entity/' : '/api/tweets_by_hashtag/';
+                let queryParam = encodeURIComponent(item[labelKey]);
+                fetch(endpoint + queryParam)
+                    .then(response => response.json())
+                    .then(data => {
+                        let tweets = data.tweets;
+                        if (tweets.length > 0) {
+                            tweets.slice(0, 5).forEach(tweet => {
+                                let tweetDiv = document.createElement('div');
+                                tweetDiv.className = 'tweet';
 
-    let g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+                                // Color code tweet based on sentiment
+                                let sentimentScore = tweet.sentiment_score || 0;
+                                let tweetColor = sentimentToColor(sentimentScore);
+                                tweetDiv.style.backgroundColor = tweetColor;
 
-    let x = d3.scaleBand()
-        .domain(data.map(d => d.user))
-        .range([0, width])
-        .padding(0.1);
+                                let tweetText = document.createElement('p');
+                                tweetText.className = 'tweet-text';
+                                tweetText.textContent = tweet.tweet_text;
+                                tweetDiv.appendChild(tweetText);
 
-    let y = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.followers)])
-        .nice()
-        .range([height, 0]);
+                                content.appendChild(tweetDiv);
+                            });
 
-    g.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x))
-        .selectAll("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", -5)
-        .attr("x", -height / 2)
-        .attr("dy", ".35em")
-        .style("text-anchor", "end");
+                            // Add most common hashtags or named entities
+                            if (labelKey === 'named_entity') {
+                                let commonHashtags = data.common_hashtags;
+                                if (commonHashtags.length > 0) {
+                                    let hashtagsDiv = document.createElement('div');
+                                    hashtagsDiv.className = 'hashtags';
+                                    let hashtagsTitle = document.createElement('strong');
+                                    hashtagsTitle.textContent = 'Common Hashtags: ';
+                                    hashtagsDiv.appendChild(hashtagsTitle);
+                                    commonHashtags.forEach(hashtag => {
+                                        let hashtagSpan = document.createElement('span');
+                                        hashtagSpan.textContent = '#' + hashtag;
+                                        hashtagsDiv.appendChild(hashtagSpan);
+                                    });
+                                    content.appendChild(hashtagsDiv);
+                                }
+                            } else if (labelKey === 'hashtag') {
+                                let commonEntities = data.common_entities;
+                                if (commonEntities.length > 0) {
+                                    let entitiesDiv = document.createElement('div');
+                                    entitiesDiv.className = 'entities';
+                                    let entitiesTitle = document.createElement('strong');
+                                    entitiesTitle.textContent = 'Common Named Entities: ';
+                                    entitiesDiv.appendChild(entitiesTitle);
+                                    commonEntities.forEach(entity => {
+                                        let entitySpan = document.createElement('span');
+                                        entitySpan.textContent = entity;
+                                        entitiesDiv.appendChild(entitySpan);
+                                    });
+                                    content.appendChild(entitiesDiv);
+                                }
+                            }
+                        } else {
+                            content.textContent = 'No tweets found.';
+                        }
+                    });
+            }
+        });
 
-    g.append("g")
-        .call(d3.axisLeft(y));
-
-    g.selectAll(".bar")
-        .data(data)
-        .enter().append("rect")
-        .attr("class", "bar")
-        .attr("x", d => x(d.user))
-        .attr("y", d => y(d.followers))
-        .attr("width", x.bandwidth())
-        .attr("height", d => height - y(d.followers));
-}
-
-// Function to create Timeline Chart
-function createTimelineChart(data) {
-    let svgWidth = 800, svgHeight = 500;
-    let svg = d3.select("#timeline-chart").append("svg")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight);
-
-    let margin = { top: 20, right: 20, bottom: 50, left: 60 },
-        width = svgWidth - margin.left - margin.right,
-        height = svgHeight - margin.top - margin.bottom;
-
-    let g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-
-    // Parse the date / time
-    let parseDate = d3.timeParse("%Y-%m-%d");
-
-    data.forEach(d => {
-        d.date = parseDate(d.date);
-        d.count = +d.count;
+        container.appendChild(bar);
     });
+}
 
-    let x = d3.scaleTime()
-        .domain(d3.extent(data, d => d.date))
-        .range([0, width]);
-
-    let y = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.count)])
-        .range([height, 0]);
-
-    let line = d3.line()
-        .x(d => x(d.date))
-        .y(d => y(d.count));
-
-    g.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x));
-
-    g.append("g")
-        .call(d3.axisLeft(y));
-
-    g.append("path")
-        .datum(data)
-        .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 1.5)
-        .attr("d", line);
+// Function to map sentiment score to color
+function sentimentToColor(sentimentScore) {
+    // Map sentiment score (-1 to 1) to color
+    // Negative sentiment (red): sentimentScore -1
+    // Neutral sentiment (grey): sentimentScore 0
+    // Positive sentiment (green): sentimentScore +1
+    // We'll use HSL color with hue from red (0) to green (120)
+    let hue = ((sentimentScore + 1) / 2) * 120; // Map -1..1 to 0..120
+    return `hsl(${hue}, 70%, 50%)`; // Saturation 70%, Lightness 50%
 }
