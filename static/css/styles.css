@@ -282,6 +282,19 @@ h2 {
     font-size: 12px;
 }
 
+
+.stats, .cooccurring-hashtags {
+    margin-bottom: 10px;
+}
+
+.cooccurring-hashtags span {
+    display: inline-block;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    padding: 3px 7px;
+    margin: 3px 2px;
+    font-size: 12px;
+}
 .tweets-table {
     width: 100%;
     border-collapse: collapse;
@@ -318,4 +331,77 @@ h2 {
 /* Adjust tweet row styles */
 .tweets-table tr {
     color: black;
+}
+
+/* Heatmap styles */
+.heatmap {
+    margin-top: 15px;
+}
+
+.heatmap-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.heatmap-block {
+    width: calc(100% / 24 - 2px); /* Subtracting 2px for margins */
+    height: 30px;
+    margin: 1px;
+    position: relative;
+    text-align: center;
+    font-size: 12px;
+    color: black;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.heatmap-count {
+    position: absolute;
+    top: 5px;
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: black;
+}
+
+.heatmap-hour {
+    position: absolute;
+    bottom: -15px;
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    color: black;
+}
+
+
+/* Summary Statistics Styles */
+.stat-card {
+    background-color: #f8f9fa;
+    padding: 20px;
+    text-align: center;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.stat-card h3 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.stat-card p {
+    font-size: 1.2rem;
+    margin: 0;
+}
+/* Bubble Chart Styles */
+#language-bubble-chart svg {
+    margin: 0 auto;
+    display: block;
+}
+
+#language-bubble-chart text {
+    font-family: sans-serif;
+    fill: white;
+    pointer-events: none;
 }

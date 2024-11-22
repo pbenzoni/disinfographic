@@ -14,12 +14,45 @@ def parse_column(column):
         except:
             return []
     return column.apply(parse_list)
+    
 
 def get_hashtags():
     df_hashtags = parse_column(df['hashtags']).explode()
     hashtag_counts = df_hashtags.value_counts().reset_index()
     hashtag_counts.columns = ['hashtag', 'count']
     return hashtag_counts.to_dict(orient='records')
+
+def get_summary_statistics():
+    total_tweets = len(df)
+    total_likes = df['like_count'].sum()
+    total_retweets = df['retweet_count'].sum()
+    total_users = df['user_screen_name'].nunique()
+    return {
+        'total_tweets': total_tweets,
+        'total_likes': int(total_likes),
+        'total_retweets': int(total_retweets),
+        'total_users': total_users
+    }
+
+def get_language_distribution():
+    lang_counts = df['tweet_language'].value_counts().reset_index()
+    lang_counts.columns = ['language', 'count']
+    #decode language codes
+    lang_map = {
+        'en': 'English',
+        'es': 'Spanish',
+        'fr': 'French',
+        'ar': 'Arabic',
+        'pt': 'Portuguese',
+        'in': 'Indonesian',
+        'ca': 'Catalan',
+        'tl': 'Filipino',
+        'und': 'Undefined'
+    }
+     #replace language codes with full names, fallback to code if not found
+    lang_counts['language'] = lang_counts['language'].map(lang_map).fillna(lang_counts['language'])
+
+    return lang_counts.to_dict(orient='records')
 
 def get_influencers():
     influencers = df.groupby('user_screen_name').agg({
@@ -42,8 +75,8 @@ def get_top_named_entities():
     df_ne = df[['named_entities', 'sentiment_score']].dropna(subset=['named_entities'])
     df_ne['named_entities_list'] = df_ne['named_entities'].apply(ast.literal_eval)
     df_ne = df_ne.explode('named_entities_list')
+        # Compute counts and average sentiment, ignoring nan values
     
-    # Compute counts and average sentiment
     ne_grouped = df_ne.groupby('named_entities_list').agg(
         count=('named_entities_list', 'size'),
         avg_sentiment=('sentiment_score', 'mean')
@@ -90,17 +123,34 @@ def get_tweet_counts_by_month():
     
     # Create a 'month_year' column
     df['month_year'] = df['tweet_time'].dt.to_period('M')
+
+    # compute sentiment distribution, grouped by positive, negative, neutral
+    sentiment_counts = df['sentiment_score'].apply(lambda score: 'positive' if score > 0 else 'negative' if score < 0 else 'neutral').value_counts()
+    sentiment_distribution = sentiment_counts.to_dict()
+
+    # Group by 'month_year' and sentiment, count tweets
+    df_month_sentiment = df.groupby(['month_year', 'sentiment']).agg(
+        count=('tweetid', 'size')
+    ).reset_index()
+
     
-    # Group by 'month_year' and count tweets
+    # Group by 'month_year' and count tweets, include sentiment distribution
     df_month = df.groupby('month_year').agg(
         count=('tweetid', 'size')
     ).reset_index()
+
+    # Include sentiment distribution as a nested dictionary
+    df_month['sentiment_distribution'] = df_month['month_year'].apply(lambda month_year: sentiment_distribution)
     
     # Convert 'month_year' back to string for JSON serialization
     df_month['month_year'] = df_month['month_year'].astype(str)
     
     # Sort by 'month_year'
     df_month = df_month.sort_values('month_year')
+
+    
+
+
     
     return df_month.to_dict(orient='records')
 
@@ -118,11 +168,39 @@ def get_tweets_by_month_year(month_year):
     filtered_tweets = filtered_tweets.sort_values(by='like_count', ascending=False)
     
     # Include relevant tweet information
-    tweets_list = filtered_tweets[['tweet_text', 'tweetid', 'sentiment', 'sentiment_score', 'hashtags', 'tweet_time']].to_dict(orient='records')
+    tweets_list = filtered_tweets[['tweet_text', 'tweetid', 'user_screen_name', 'tweet_language', 'like_count', 'retweet_count', 'sentiment_score', 'hashtags', 'user_mentions']].to_dict(orient='records')
     
+    # Aggregate stats
+    total_likes = filtered_tweets['like_count'].sum()
+    total_retweets = filtered_tweets['retweet_count'].sum()
+
+    # Co-occurring users mentioned
+    mentions_series = filtered_tweets['user_mentions'].dropna().apply(ast.literal_eval).explode()
+    mentions_counts = mentions_series.value_counts().head(5)
+    cooccurring_users = mentions_counts.index.tolist()
+
+    #co-occurring hashtags
+    hashtags_series = filtered_tweets['hashtags'].dropna().apply(ast.literal_eval).explode()
+    hashtag_counts = hashtags_series.value_counts().head(5)
+    cooccurring_hashtags = hashtag_counts.index.tolist()
+
+    
+    # Compute tweet counts per hour
+    filtered_tweets['tweet_time'] = pd.to_datetime(filtered_tweets['tweet_time'])
+    filtered_tweets['hour'] = filtered_tweets['tweet_time'].dt.hour
+    hourly_counts_series = filtered_tweets.groupby('hour').size()
+    hourly_counts = hourly_counts_series.reindex(range(24), fill_value=0).tolist()
+
+
     return {
-        'tweets': tweets_list
+        'tweets': tweets_list,
+        'total_likes': int(total_likes),
+        'total_retweets': int(total_retweets),
+        'cooccurring_users': cooccurring_users,
+        'cooccurring_hashtags': cooccurring_hashtags,
+        'hourly_counts': hourly_counts  # New data added here
     }
+
 
 
 def get_tweets_by_mention(mention):
@@ -151,12 +229,21 @@ def get_tweets_by_mention(mention):
     hashtag_counts = hashtags_series.value_counts().head(5)
     cooccurring_hashtags = hashtag_counts.index.tolist()
 
+    
+    # Compute tweet counts per hour
+    filtered_tweets['tweet_time'] = pd.to_datetime(filtered_tweets['tweet_time'])
+    filtered_tweets['hour'] = filtered_tweets['tweet_time'].dt.hour
+    hourly_counts_series = filtered_tweets.groupby('hour').size()
+    hourly_counts = hourly_counts_series.reindex(range(24), fill_value=0).tolist()
+
+
     return {
         'tweets': tweets_list,
         'total_likes': int(total_likes),
         'total_retweets': int(total_retweets),
         'cooccurring_users': cooccurring_users,
-        'cooccurring_hashtags': cooccurring_hashtags
+        'cooccurring_hashtags': cooccurring_hashtags,
+        'hourly_counts': hourly_counts  # New data added here
     }
 
 # def get_tweets_by_named_entity(ne):
@@ -201,12 +288,19 @@ def get_tweets_by_hashtag(hashtag):
     hashtag_counts = hashtags_series.value_counts().head(5)
     cooccurring_hashtags = hashtag_counts.index.tolist()
 
+    # Compute tweet counts per hour
+    filtered_tweets['tweet_time'] = pd.to_datetime(filtered_tweets['tweet_time'])
+    filtered_tweets['hour'] = filtered_tweets['tweet_time'].dt.hour
+    hourly_counts_series = filtered_tweets.groupby('hour').size()
+    hourly_counts = hourly_counts_series.reindex(range(24), fill_value=0).tolist()
+
     return {
         'tweets': tweets_list,
         'total_likes': int(total_likes),
         'total_retweets': int(total_retweets),
         'cooccurring_users': cooccurring_users,
-        'cooccurring_hashtags': cooccurring_hashtags
+        'cooccurring_hashtags': cooccurring_hashtags,
+        'hourly_counts': hourly_counts  # New data added here
     }
 
 
@@ -254,12 +348,19 @@ def get_user_details(username):
     hashtag_counts = hashtags_series.value_counts().head(5)
     top_hashtags = hashtag_counts.index.tolist()
 
+    # Compute tweet counts per hour
+    df_user['tweet_time'] = pd.to_datetime(df_user['tweet_time'])
+    df_user['hour'] = df_user['tweet_time'].dt.hour
+    hourly_counts_series = df_user.groupby('hour').size()
+    hourly_counts = hourly_counts_series.reindex(range(24), fill_value=0).tolist()
+
     return {
         'tweets': tweets_list,
         'top_hashtags': top_hashtags,
         'total_likes': int(total_likes),
         'total_retweets': int(total_retweets),
         'cooccurring_users': cooccurring_users,
+        'hourly_counts': hourly_counts  # New data added here
         
     }
 
@@ -341,10 +442,10 @@ def tweets_by_mention_route(mention):
     data = get_tweets_by_mention(mention.strip())
     return jsonify(data)
 
-@app.route('/api/tweets_by_named_entity/<path:ne>')
-def tweets_by_named_entity(ne):
-    tweets_list = get_tweets_by_named_entity(ne.strip())
-    return jsonify(tweets_list)
+# @app.route('/api/tweets_by_named_entity/<path:ne>')
+# def tweets_by_named_entity(ne):
+#     tweets_list = get_tweets_by_named_entity(ne.strip())
+#     return jsonify(tweets_list)
 
 @app.route('/api/tweets_by_hashtag/<path:hashtag>')
 def tweets_by_hashtag(hashtag):
@@ -370,6 +471,16 @@ def top_users():
 def user_details(username):
     data = get_user_details(username.strip())
     return jsonify(data)
+
+@app.route('/api/summary_statistics')
+def summary_statistics():
+    stats = get_summary_statistics()
+    return jsonify(stats)
+
+@app.route('/api/language_distribution')
+def language_distribution():
+    distribution = get_language_distribution()
+    return jsonify(distribution)
 
 if __name__ == '__main__':
     app.run(debug=True)

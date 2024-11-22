@@ -36,8 +36,26 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(response => response.json())
         .then(data => {
 
-
             createTimeBarChart(data, 'tweet-volume-chart', 'month_year', 'Tweet Volume');
+        });
+
+    // Fetch and display account locations heatmap
+    fetch('/api/account_locations')
+        .then(response => response.json())
+        .then(data => {
+            createAccountHeatmap(data);
+        });
+
+    fetch('/api/summary_statistics')
+        .then(response => response.json())
+        .then(data => {
+            displaySummaryStatistics(data);
+        });
+    // Fetch and display language distribution bubble chart
+    fetch('/api/language_distribution')
+        .then(response => response.json())
+        .then(data => {
+            createLanguageBubbleChart(data);
         });
 
 });
@@ -76,7 +94,7 @@ function createBarChart(data, containerId, labelKey, labelName) {
         bar.appendChild(content);
 
         // Add click event to expand/collapse the bar
-        bar.addEventListener('click', function() {
+        bar.addEventListener('click', function () {
             if (bar.classList.contains('expanded')) {
                 bar.classList.remove('expanded');
                 content.innerHTML = ''; // Clear content
@@ -142,6 +160,14 @@ function createBarChart(data, containerId, labelKey, labelName) {
 
                         content.appendChild(summaryDiv);
 
+                        const heatmapDiv = document.createElement('div');
+                        heatmapDiv.className = 'heatmap';
+
+                        // Create heatmap visualization
+                        createHeatmap(heatmapDiv, data.hourly_counts);
+
+                        content.appendChild(heatmapDiv);
+
                         // Display Tweets
                         if (data.tweets.length > 0) {
                             // Create table for tweets
@@ -200,8 +226,18 @@ function createBarChart(data, containerId, labelKey, labelName) {
     });
 }
 function sentimentToColor(sentimentScore) {
-    let hue = ((sentimentScore + 1) / 2) * 120; // Map -1 to 1 to 0 to 120 degrees on the hue wheel
-    return `hsl(${hue}, 70%, 80%)`; // Saturation 70%, Lightness 95% for a pale color
+    //if sentiment score is null, return grey color
+    if (sentimentScore === null) {
+        return 'lightgrey';
+    }
+
+    // Transform the sentiment score to exaggerate extremes
+    let amplifiedScore = Math.sign(sentimentScore) * Math.pow(Math.abs(sentimentScore), .6); // Exponent > 1 pushes extremes
+
+    // Map amplified sentiment score to hue
+    let hue = ((amplifiedScore + 1) / 2) * 120; // Still maps -1 to 1 to 0 to 120 degrees
+
+    return `hsl(${hue}, 70%, 80%)`; // Saturation 70%, Lightness 80%
 }
 
 function populateTopUsersTable(data) {
@@ -219,7 +255,7 @@ function populateTopUsersTable(data) {
         `;
 
         // Add click event to expand/collapse the row
-        row.addEventListener('click', function() {
+        row.addEventListener('click', function () {
             // Check if the row is already expanded
             const isExpanded = row.classList.contains('expanded');
 
@@ -289,6 +325,14 @@ function populateTopUsersTable(data) {
 
                         contentDiv.appendChild(summaryDiv);
 
+                        const heatmapDiv = document.createElement('div');
+                        heatmapDiv.className = 'heatmap';
+
+                        // Create heatmap visualization
+                        createHeatmap(heatmapDiv, data.hourly_counts);
+
+                        content.appendChild(heatmapDiv);
+
                         // Display Tweets in a sortable table
                         if (data.tweets.length > 0) {
                             const tweetsTable = document.createElement('table');
@@ -356,7 +400,7 @@ function makeTableSortable(table) {
     const headers = table.querySelectorAll('th');
 
     headers.forEach(header => {
-        header.addEventListener('click', function() {
+        header.addEventListener('click', function () {
             const tbody = table.querySelector('tbody');
             const rows = Array.from(tbody.querySelectorAll('tr'));
             const index = Array.from(headers).indexOf(header);
@@ -425,6 +469,37 @@ function createTimeBarChart(data, containerId, labelKey, labelName) {
         .append('g')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
+    // Define gradient for each bar
+    const defs = svg.append('defs');
+
+    data.forEach((d, i) => {
+        d.positive = d.sentiment_distribution.positive;
+        d.neutral = d.sentiment_distribution.neutral;
+        d.negative = d.sentiment_distribution.negative;
+
+
+        const gradientId = `gradient-${i}`;
+        const total = d.positive + d.neutral + d.negative;
+
+        defs.append('linearGradient')
+            .attr('id', gradientId)
+            .attr('x1', '0%')
+            .attr('x2', '0%')
+            .attr('y1', '0%')
+            .attr('y2', '100%')
+            .selectAll('stop')
+            .data([
+                { offset: '0%', color: 'green', value: d.positive / total },
+                { offset: `${(d.positive / total) * 100}%`, color: 'yellow', value: d.neutral / total },
+                { offset: '100%', color: 'red', value: d.negative / total }
+            ])
+            .enter()
+            .append('stop')
+            .attr('offset', d => d.offset)
+            .attr('stop-color', d => d.color);
+    });
+
+
     // Create scales
     const xScale = d3.scaleBand()
         .domain(data.map(d => d.month_year))
@@ -448,18 +523,24 @@ function createTimeBarChart(data, containerId, labelKey, labelName) {
     svg.append('g')
         .call(d3.axisLeft(yScale));
 
-    // Add bars
     svg.selectAll('.bar')
         .data(data)
         .enter()
         .append('rect')
         .attr('class', 'time-bar')
-        .attr('x', d => xScale(d.month_year)) // Reference the month_year here
-        .attr('y', d => yScale(d.count))
+        .attr('x', date => xScale(date.month_year)) // Reference the month_year here
+        .attr('y', date => yScale(date.count))
         .attr('width', xScale.bandwidth())
         .attr('height', d => height - yScale(d.count))
         .attr('fill', '#69b3a2')
-        .on('click', function (event, d) {
+        .on('click', function (event, d_idx) {
+            //clear existing content
+            const content = document.getElementById('tweet-details');
+            content.innerHTML = '';
+
+            // get data for this date by index (date)
+            this_date_data = data[d_idx];
+
             // Remove existing highlight
             svg.selectAll('.time-bar').attr('fill', '#69b3a2');
 
@@ -467,66 +548,107 @@ function createTimeBarChart(data, containerId, labelKey, labelName) {
             d3.select(this).attr('fill', '#ff7f0e');
 
             // Fetch and display tweets for this month_year
-            const monthYear = encodeURIComponent(d.month_year); // Use the correct property from the data
+            const monthYear = encodeURIComponent(this_date_data.month_year); // Use the correct property from the data
             fetch('/api/tweets_by_month_year/' + monthYear)
                 .then(response => response.json())
-                .then(data => {
-                    const tweets = data.tweets.slice(0, 10);
-                    const tweetDetailsDiv = document.getElementById('tweet-details');
+                .then(data => {    // Display Summary
+                    let summaryDiv = document.createElement('div');
+                    summaryDiv.className = 'summary';
 
-                    // Clear previous content
-                    tweetDetailsDiv.innerHTML = '';
+                    let statsDiv = document.createElement('div');
+                    statsDiv.className = 'stats';
+                    statsDiv.innerHTML = `<strong>Summary Stats:</strong> Likes: ${data.total_likes}, Retweets: ${data.total_retweets}`;
+                    summaryDiv.appendChild(statsDiv);
 
-                    if (tweets.length > 0) {
-                        // Create table
-                        const table = document.createElement('table');
-                        table.className = 'table table-striped';
+                    if (data.cooccurring_users.length > 0) {
+                        let mentionsDiv = document.createElement('div');
+                        mentionsDiv.className = 'cooccurring-users';
+                        let mentionsTitle = document.createElement('strong');
+                        mentionsTitle.textContent = 'Co-occurring Users Mentioned: ';
+                        mentionsDiv.appendChild(mentionsTitle);
+                        data.cooccurring_users.forEach(user => {
+                            let userSpan = document.createElement('span');
+                            userSpan.textContent = '@' + user;
+                            mentionsDiv.appendChild(userSpan);
+                        });
+                        summaryDiv.appendChild(mentionsDiv);
+                    }
+
+                    if (data.cooccurring_hashtags.length > 0) {
+                        let hashtagsDiv = document.createElement('div');
+                        hashtagsDiv.className = 'cooccurring-hashtags';
+                        let hashtagsTitle = document.createElement('strong');
+                        hashtagsTitle.textContent = 'Co-occurring Hashtags: ';
+                        hashtagsDiv.appendChild(hashtagsTitle);
+                        data.cooccurring_hashtags.forEach(hashtag => {
+                            let hashtagSpan = document.createElement('span');
+                            hashtagSpan.textContent = '#' + hashtag;
+                            hashtagsDiv.appendChild(hashtagSpan);
+                        });
+                        summaryDiv.appendChild(hashtagsDiv);
+                    }
+
+                    content.appendChild(summaryDiv);
+
+                    const heatmapDiv = document.createElement('div');
+                    heatmapDiv.className = 'heatmap';
+
+                    // Create heatmap visualization
+                    createHeatmap(heatmapDiv, data.hourly_counts);
+
+                    content.appendChild(heatmapDiv);
+
+                    // Display Tweets
+                    if (data.tweets.length > 0) {
+                        // Create table for tweets
+                        let tweetsTable = document.createElement('table');
+                        tweetsTable.className = 'tweets-table';
 
                         // Table header
-                        const thead = document.createElement('thead');
-                        const headerRow = document.createElement('tr');
-                        const headers = ['Date', 'Tweet', 'Sentiment'];
-                        headers.forEach(headerText => {
-                            const th = document.createElement('th');
-                            th.textContent = headerText;
-                            headerRow.appendChild(th);
-                        });
-                        thead.appendChild(headerRow);
-                        table.appendChild(thead);
+                        let thead = document.createElement('thead');
+                        thead.innerHTML = `
+                            <tr>
+                                <th data-sort="string">User</th>
+                                <th data-sort="string">Language</th>
+                                <th data-sort="int">Likes</th>
+                                <th data-sort="int">Retweets</th>
+                                <th>Tweet</th>
+                            </tr>
+                        `;
+                        tweetsTable.appendChild(thead);
 
                         // Table body
-                        const tbody = document.createElement('tbody');
-                        tweets.forEach(tweet => {
-                            const row = document.createElement('tr');
+                        let tbody = document.createElement('tbody');
+                        data.tweets.slice(0, 10).forEach(tweet => {
+                            let row = document.createElement('tr');
 
-                            // Date
-                            const dateCell = document.createElement('td');
-                            const tweetDate = new Date(tweet.created_at).toLocaleString();
-                            dateCell.textContent = tweetDate;
-                            row.appendChild(dateCell);
+                            let trimmedUsername = tweet.user_screen_name.length > 20 ? tweet.user_screen_name.substring(0, 20) + '…' : tweet.user_screen_name;
 
-                            // Tweet Text
-                            const tweetCell = document.createElement('td');
-                            tweetCell.textContent = tweet.tweet_text;
-                            row.appendChild(tweetCell);
+                            row.innerHTML = `
+                                <td>${trimmedUsername}</td>
+                                <td>${tweet.language}</td>
+                                <td>${tweet.like_count}</td>
+                                <td>${tweet.retweet_count}</td>
+                                <td class="tweet-text">${highlightText(tweet.tweet_text)}</td>
+                            `;
 
-                            // Sentiment
-                            const sentimentCell = document.createElement('td');
-                            const sentimentScore = tweet.sentiment_score || 0;
-                            const sentimentColor = sentimentToColor(sentimentScore);
-                            sentimentCell.style.backgroundColor = sentimentColor;
-                            sentimentCell.textContent = sentimentScore.toFixed(2);
-                            row.appendChild(sentimentCell);
+                            // Color code tweet based on sentiment
+                            let sentimentScore = tweet.sentiment_score || 0;
+                            let tweetColor = sentimentToColor(sentimentScore);
+                            row.style.backgroundColor = tweetColor;
 
                             tbody.appendChild(row);
                         });
-                        table.appendChild(tbody);
+                        tweetsTable.appendChild(tbody);
 
-                        // Append table to the details div
-                        tweetDetailsDiv.appendChild(table);
+                        // Add sortable functionality to the table
+                        makeTableSortable(tweetsTable);
+
+                        content.appendChild(tweetsTable);
                     } else {
-                        tweetDetailsDiv.textContent = 'No tweets found for this period.';
+                        content.textContent = 'No tweets found.';
                     }
+
                 })
                 .catch(error => {
                     console.error('Error fetching tweets:', error);
@@ -534,4 +656,135 @@ function createTimeBarChart(data, containerId, labelKey, labelName) {
                     tweetDetailsDiv.textContent = 'Error fetching tweets for this period.';
                 });
         });
+}
+
+function createHeatmap(container, hourlyCounts) {
+    // Create a container for the heatmap
+    const heatmapContainer = document.createElement('div');
+    heatmapContainer.className = 'heatmap-container';
+
+    // Maximum count for normalization
+    const maxCount = Math.max(...hourlyCounts);
+
+    // Create a block for each hour
+    for (let hour = 0; hour < 24; hour++) {
+        const count = hourlyCounts[hour];
+        const block = document.createElement('div');
+        block.className = 'heatmap-block';
+
+        // Set background color based on count
+        const intensity = maxCount > 0 ? count / maxCount : 0;
+        const color = `rgba(42, 157, 143, ${intensity})`;  // Blue color with varying opacity
+        block.style.backgroundColor = color;
+
+        // Tooltip showing the hour and count
+        block.title = `${hour}:00 - ${hour}:59\n${count} tweets`;
+
+        // Display the count on top of the block
+        const countLabel = document.createElement('div');
+        countLabel.className = 'heatmap-count';
+        countLabel.textContent = count;
+        block.appendChild(countLabel);
+
+        // Display the hour at the bottom
+        if (hour % 3 === 0) {
+            const hourLabel = document.createElement('div');
+            hourLabel.className = 'heatmap-hour';
+            hourLabel.textContent = hour;
+            block.appendChild(hourLabel);
+        }
+        // Append block to the container
+        heatmapContainer.appendChild(block);
+    }
+
+    // Append the heatmap to the provided container
+    container.appendChild(heatmapContainer);
+}
+
+
+function displaySummaryStatistics(stats) {
+    const container = document.getElementById('stats-container');
+
+    const statsList = [
+        { label: 'Total Tweets', value: stats.total_tweets },
+        { label: 'Total Likes', value: stats.total_likes },
+        { label: 'Total Retweets', value: stats.total_retweets },
+        { label: 'Unique Users', value: stats.total_users }
+    ];
+
+    statsList.forEach(stat => {
+        const col = document.createElement('div');
+        col.className = 'col-md-3';
+
+        const statCard = document.createElement('div');
+        statCard.className = 'stat-card';
+
+        const statValue = document.createElement('h3');
+        statValue.textContent = stat.value;
+
+        const statLabel = document.createElement('p');
+        statLabel.textContent = stat.label;
+
+        statCard.appendChild(statValue);
+        statCard.appendChild(statLabel);
+        col.appendChild(statCard);
+        container.appendChild(col);
+    });
+}
+
+
+function createLanguageBubbleChart(data) {
+    // Set dimensions
+    const width = 960;
+    const height = 600;
+
+    // Create SVG element
+    const svg = d3.select('#language-bubble-chart')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+    // Convert data to hierarchy
+    const root = d3.hierarchy({ children: data })
+        .sum(d => d.count);
+
+    // Create a pack layout
+    const pack = d3.pack()
+        .size([width, height])
+        .padding(10);
+
+    // Apply the pack layout to the data
+    const nodes = pack(root).leaves();
+
+    // Create bubbles
+    const bubble = svg.selectAll('g')
+        .data(nodes)
+        .enter()
+        .append('g')
+        .attr('transform', d => `translate(${d.x},${d.y})`);
+
+    // Draw egg-shaped bubbles
+    bubble.append('ellipse')
+        .attr('rx', d => d.r * 0.8)
+        .attr('ry', d => d.r)
+        .attr('fill', '#69b3a2');
+
+    // Add labels
+    bubble.append('text')
+        .attr('dy', '.3em')
+        .attr('text-anchor', 'middle')
+        .style('font-size', d => Math.min(2 * d.r / 5, 16))
+        .text(d => d.data.language);
+
+    // Add counts
+    bubble.append('text')
+        .attr('dy', '1.5em')
+        .attr('text-anchor', 'middle')
+        .style('font-size', d => Math.min(2 * d.r / 5, 12))
+        .text(d => d.data.count);
+
+    // Add tooltip
+    bubble.append('title')
+        .text(d => `${d.data.language}: ${d.data.count} tweets`);
+
 }

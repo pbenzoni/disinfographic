@@ -7,14 +7,16 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from gensim import corpora, models
 from sklearn.feature_extraction.text import TfidfVectorizer
-from textblob import TextBlob
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import spacy
 
 # Download NLTK data files (only need to run once)
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
+nltk.download('vader_lexicon')
 nlp = spacy.load('en_core_web_sm')
+analyzer = SentimentIntensityAnalyzer()
 
 # Initialize the lemmatizer
 lemmatizer = WordNetLemmatizer()
@@ -28,14 +30,17 @@ file_path = "C:\\Users\\benzo\\repo\\disinfographic\\data\\all_RNA_tweets.csv"
 # Read the CSV file into a DataFrame
 df = pd.read_csv(file_path, encoding='utf-8')
 
-#filter out non-english tweets (tweets with language != 'en')
-df = df[df['tweet_language'] == 'en']
 
 # remove leading "rt " from tweets
-df['tweet_text'] = df['tweet_text'].apply(lambda x: re.sub(r'^rt ', '', x))
+df['cleaned_text'] = df['tweet_text'].apply(lambda x: re.sub(r'^rt ', '', x))
 
 # Display the first few rows
 print(df.head())
+
+# Filter out tweets before 2019
+df['tweet_time'] = pd.to_datetime(df['tweet_time'])
+df = df[df['tweet_time'] >= '2019-01-01']
+
 
 
 def preprocess_tweet(text):
@@ -57,7 +62,7 @@ def preprocess_tweet(text):
     return cleaned_text
 
 # Apply the preprocessing to the 'tweet_text' column
-df['cleaned_text'] = df['tweet_text'].apply(preprocess_tweet)
+df['cleaned_text'] = df['cleaned_text'].apply(preprocess_tweet)
 
 # Display the cleaned tweets
 print(df[['tweet_text', 'cleaned_text']].head())
@@ -124,18 +129,22 @@ corpus = [dictionary.doc2bow(text) for text in tokenized_text]
 
 
 def get_sentiment(text):
-    analysis = TextBlob(text)
+    scores = analyzer.polarity_scores(text)
     # Polarity ranges from -1 (negative) to 1 (positive)
-    return analysis.sentiment.polarity
+    return scores['compound']
 
-# Apply sentiment analysis
-df['sentiment_score'] = df['cleaned_text'].apply(get_sentiment)
+# Apply sentiment analysis only to those with 'en' language
+for index, row in df.iterrows():
+    if row['tweet_language'] == 'en':
+        df.at[index, 'sentiment_score'] = get_sentiment(row['tweet_text'])
+    else:
+        df.at[index, 'sentiment_score'] = 0.0
 
 # Categorize sentiment
 def categorize_sentiment(score):
-    if score > 0.3:
+    if score > 0.25:
         return 'Positive'
-    elif score < -0.3:
+    elif score < -0.25:
         return 'Negative'
     else:
         return 'Neutral'
@@ -148,16 +157,16 @@ print(df[['cleaned_text', 'sentiment_score', 'sentiment']].head())
 # Download NLTK POS tagger data
 nltk.download('averaged_perceptron_tagger')
 
-def extract_pos_tags(text):
-    tokens = nltk.word_tokenize(text)
-    pos_tags = nltk.pos_tag(tokens)
-    return pos_tags
+# def extract_pos_tags(text):
+#     tokens = nltk.word_tokenize(text)
+#     pos_tags = nltk.pos_tag(tokens)
+#     return pos_tags
 
-# Apply POS tagging
-df['pos_tags'] = df['cleaned_text'].apply(extract_pos_tags)
+# # Apply POS tagging
+# df['pos_tags'] = df['cleaned_text'].apply(extract_pos_tags)
 
-# Example of POS tags
-print(df[['cleaned_text', 'pos_tags']].head())
+# # Example of POS tags
+# print(df[['cleaned_text', 'pos_tags']].head())
 
 def extract_named_entities(text):
     doc = nlp(text)
