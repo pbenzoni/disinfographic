@@ -58,6 +58,18 @@ document.addEventListener('DOMContentLoaded', function () {
             createLanguageBubbleChart(data);
         });
 
+    // Handle search form submission
+    const searchForm = document.getElementById('search-form');
+    searchForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const query = document.getElementById('search-input').value;
+        if (query.trim() === '') {
+            alert('Please enter a search query.');
+            return;
+        }
+        performSearch(query);
+    });
+
 });
 function createBarChart(data, containerId, labelKey, labelName) {
     let container = document.getElementById(containerId);
@@ -112,10 +124,15 @@ function createBarChart(data, containerId, labelKey, labelName) {
                 let endpoint;
                 if (labelKey === 'named_entity') {
                     endpoint = '/api/tweets_by_named_entity/';
+                    searchQuery = `named_entity:"${item[labelKey]}"`;
+
                 } else if (labelKey === 'hashtag') {
                     endpoint = '/api/tweets_by_hashtag/';
+                    searchQuery = `hashtags:"${item[labelKey]}"`;
+
                 } else if (labelKey === 'mention') {
                     endpoint = '/api/tweets_by_mention/';
+                    searchQuery = `mentions:"${item[labelKey]}"`;
                 }
                 let queryParam = encodeURIComponent(item[labelKey]);
                 fetch(endpoint + queryParam)
@@ -128,6 +145,23 @@ function createBarChart(data, containerId, labelKey, labelName) {
                         let statsDiv = document.createElement('div');
                         statsDiv.className = 'stats';
                         statsDiv.innerHTML = `<strong>Summary Stats:</strong> Likes: ${data.total_likes}, Retweets: ${data.total_retweets}`;
+
+                        // Add the button to perform the search on the same page 
+                        let searchButton = document.createElement('button');
+                        searchButton.className = 'btn btn-secondary float-right';
+                        searchButton.textContent = 'View all matching tweets';
+
+                        searchButton.addEventListener('click', function () {
+                            // Set the search input value
+                            document.getElementById('search-input').value = searchQuery;
+                            // Perform the search
+                            performSearch(searchQuery);
+                            // Optionally, scroll to the search results section
+                            document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
+                        });
+
+                        summaryDiv.appendChild(searchButton);
+
                         summaryDiv.appendChild(statsDiv);
 
                         if (data.cooccurring_users.length > 0) {
@@ -196,7 +230,7 @@ function createBarChart(data, containerId, labelKey, labelName) {
 
                                 row.innerHTML = `
                                     <td>${trimmedUsername}</td>
-                                    <td>${tweet.language}</td>
+                                    <td>${tweet.tweet_language}</td>
                                     <td>${tweet.like_count}</td>
                                     <td>${tweet.retweet_count}</td>
                                     <td class="tweet-text">${highlightText(tweet.tweet_text)}</td>
@@ -277,6 +311,8 @@ function populateTopUsersTable(data) {
                 fetch('/api/user_details/' + username)
                     .then(response => response.json())
                     .then(data => {
+                        let searchQuery = `user:"${username}"`;
+
                         // Create a new row for expanded content
                         const expandRow = document.createElement('tr');
                         expandRow.classList.add('expandable-row');
@@ -293,6 +329,22 @@ function populateTopUsersTable(data) {
                         const statsDiv = document.createElement('div');
                         statsDiv.className = 'stats';
                         statsDiv.innerHTML = `<strong>Summary Stats:</strong> Likes: ${data.total_likes}, Retweets: ${data.total_retweets}`;
+
+                        // Add the button to perform the search on the same page 
+                        let searchButton = document.createElement('button');
+                        searchButton.className = 'btn btn-secondary float-right';
+                        searchButton.textContent = 'View all matching tweets';
+
+                        searchButton.addEventListener('click', function () {
+                            // Set the search input value
+                            document.getElementById('search-input').value = searchQuery;
+                            // Perform the search
+                            performSearch(searchQuery);
+                            // Optionally, scroll to the search results section
+                            document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
+                        });
+
+                        summaryDiv.appendChild(searchButton);
                         summaryDiv.appendChild(statsDiv);
 
                         if (data.cooccurring_users.length > 0) {
@@ -331,7 +383,7 @@ function populateTopUsersTable(data) {
                         // Create heatmap visualization
                         createHeatmap(heatmapDiv, data.hourly_counts);
 
-                        content.appendChild(heatmapDiv);
+                        contentDiv.appendChild(heatmapDiv);
 
                         // Display Tweets in a sortable table
                         if (data.tweets.length > 0) {
@@ -354,7 +406,7 @@ function populateTopUsersTable(data) {
                                 const tweetRow = document.createElement('tr');
 
                                 tweetRow.innerHTML = `
-                                    <td>${tweet.language}</td>
+                                    <td>${tweet.tweet_language}</td>
                                     <td>${tweet.like_count}</td>
                                     <td>${tweet.retweet_count}</td>
                                     <td class="tweet-text">${highlightText(tweet.tweet_text)}</td>
@@ -560,6 +612,23 @@ function createTimeBarChart(data, containerId, labelKey, labelName) {
                     statsDiv.innerHTML = `<strong>Summary Stats:</strong> Likes: ${data.total_likes}, Retweets: ${data.total_retweets}`;
                     summaryDiv.appendChild(statsDiv);
 
+                    let searchQuery = `month_year:"${monthYear}"`;
+                    // Add the button to perform the search on the same page 
+                    let searchButton = document.createElement('button');
+                    searchButton.className = 'btn btn-secondary float-right';
+                    searchButton.textContent = 'View all matching tweets';
+
+                    searchButton.addEventListener('click', function () {
+                        // Set the search input value
+                        document.getElementById('search-input').value = searchQuery;
+                        // Perform the search
+                        performSearch(searchQuery);
+                        // Optionally, scroll to the search results section
+                        document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
+                    });
+
+                    summaryDiv.appendChild(searchButton);
+
                     if (data.cooccurring_users.length > 0) {
                         let mentionsDiv = document.createElement('div');
                         mentionsDiv.className = 'cooccurring-users';
@@ -626,7 +695,7 @@ function createTimeBarChart(data, containerId, labelKey, labelName) {
 
                             row.innerHTML = `
                                 <td>${trimmedUsername}</td>
-                                <td>${tweet.language}</td>
+                                <td>${tweet.tweet_language}</td>
                                 <td>${tweet.like_count}</td>
                                 <td>${tweet.retweet_count}</td>
                                 <td class="tweet-text">${highlightText(tweet.tweet_text)}</td>
@@ -732,29 +801,32 @@ function displaySummaryStatistics(stats) {
     });
 }
 
-
 function createLanguageBubbleChart(data) {
-    // Set dimensions
-    const width = 960;
-    const height = 600;
+    //set width to half of container width
+    const width = document.getElementById('language-bubble-chart').clientWidth / 2;
+
+    const height = 500;
+    const buffer = 50; // Buffer area to avoid cutting off bubbles
 
     // Create SVG element
     const svg = d3.select('#language-bubble-chart')
         .append('svg')
-        .attr('width', width)
-        .attr('height', height);
+        .attr('width', width + buffer * 2)
+        .attr('height', height + buffer * 2)
+        .append('g')
+        .attr('transform', `translate(${buffer}, ${buffer})`);
 
-    // Convert data to hierarchy
-    const root = d3.hierarchy({ children: data })
-        .sum(d => d.count);
+   // Set minimum radius to ensure bubbles are not too small
+   const minRadius = 10;
 
-    // Create a pack layout
-    const pack = d3.pack()
-        .size([width, height])
-        .padding(10);
-
-    // Apply the pack layout to the data
-    const nodes = pack(root).leaves();
+   // Calculate positions along a curved diagonal path
+   const nodes = data.map((d, i) => {
+       const t = i / (data.length - 1);
+       const x = t * width * .8; // Spread along the width
+       const y = (t * height * 0.9) + (Math.sin(t * Math.PI) * height * -0.1); // Add curve to the diagonal path
+       const r = Math.max(Math.sqrt(d.count), minRadius); // Ensure a minimum radius
+       return { data: d, x, y, r };
+   });
 
     // Create bubbles
     const bubble = svg.selectAll('g')
@@ -763,28 +835,103 @@ function createLanguageBubbleChart(data) {
         .append('g')
         .attr('transform', d => `translate(${d.x},${d.y})`);
 
-    // Draw egg-shaped bubbles
+    // Draw egg-shaped bubbles (heavy on the bottom)
     bubble.append('ellipse')
         .attr('rx', d => d.r * 0.8)
         .attr('ry', d => d.r)
-        .attr('fill', '#69b3a2');
+        .attr('fill', '#69b3a2')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 3); // Thick border
 
-    // Add labels
+    // Add labels outside, to the right of the bubble in black, including counts
     bubble.append('text')
-        .attr('dy', '.3em')
-        .attr('text-anchor', 'middle')
-        .style('font-size', d => Math.min(2 * d.r / 5, 16))
-        .text(d => d.data.language);
-
-    // Add counts
-    bubble.append('text')
-        .attr('dy', '1.5em')
-        .attr('text-anchor', 'middle')
-        .style('font-size', d => Math.min(2 * d.r / 5, 12))
-        .text(d => d.data.count);
+        .attr('x', d => d.r + 5)
+        .attr('y', 0)
+        .attr('text-anchor', 'start')
+        .style('font-size', 12)
+        .style('fill', 'black')
+        .style('z-index', 10) // Bring up z-index on labels
+        .text(d => `${d.data.language}: ${d.data.count}`);
 
     // Add tooltip
     bubble.append('title')
         .text(d => `${d.data.language}: ${d.data.count} tweets`);
+}
 
+
+function performSearch(query) {
+    fetch('/api/search?query=' + encodeURIComponent(query))
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                displaySearchResults(data.tweets, query);
+                document.getElementById('search-section').scrollIntoView({ behavior: 'smooth' });
+
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+function displaySearchResults(tweets, query) {
+    const resultsContainer = document.getElementById('search-results');
+    resultsContainer.innerHTML = ''; // Clear previous results
+
+    const heading = document.createElement('h3');
+    heading.textContent = `Search Results for "${query}" (${tweets.length} tweets found)`;
+    resultsContainer.appendChild(heading);
+
+    if (tweets.length === 0) {
+        const noResults = document.createElement('p');
+        noResults.textContent = 'No tweets found matching your query.';
+        resultsContainer.appendChild(noResults);
+        return;
+    }
+
+    // Create a table to display tweets
+    const table = document.createElement('table');
+    table.className = 'table table-striped';
+
+    // Table header
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>User</th>
+            <th>Language</th>
+            <th>Likes</th>
+            <th>Retweets</th>
+            <th>Tweet</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    // Table body
+    const tbody = document.createElement('tbody');
+    tweets.forEach(tweet => {
+        const row = document.createElement('tr');
+
+        // Trim username to 20 characters
+        let trimmedUsername = tweet.user_screen_name.length > 20 ? tweet.user_screen_name.substring(0, 20) + '…' : tweet.user_screen_name;
+
+        row.innerHTML = `
+            <td>${trimmedUsername}</td>
+            <td>${tweet.tweet_language}</td>
+            <td>${tweet.like_count}</td>
+            <td>${tweet.retweet_count}</td>
+            <td class="tweet-text">${highlightText(tweet.tweet_text)}</td>
+        `;
+
+        // Color code tweet based on sentiment
+        let sentimentScore = tweet.sentiment_score || 0;
+        let tweetColor = sentimentToColor(sentimentScore);
+        row.style.backgroundColor = tweetColor;
+
+        tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+
+    resultsContainer.appendChild(table);
 }

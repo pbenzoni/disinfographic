@@ -9,6 +9,8 @@ from gensim import corpora, models
 from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import spacy
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut
 
 # Download NLTK data files (only need to run once)
 nltk.download('punkt')
@@ -204,6 +206,36 @@ df['avg_word_length'] = df['cleaned_text'].apply(average_word_length)
 
 # Display the linguistic features
 print(df[['cleaned_text', 'word_count', 'unique_word_count', 'avg_word_length']].head())
+
+
+# Initialize geolocator with a user_agent (required)
+geolocator = Nominatim(user_agent="geoapi")
+
+# Function to perform geocoding
+def geocode_location(location):
+    try:
+        if pd.notnull(location) and location.strip() != "":
+            # Use geolocator to get location
+            location_obj = geolocator.geocode(location)
+            if location_obj:
+                return (location_obj.latitude, location_obj.longitude)
+        return (np.nan, np.nan)
+    except GeocoderTimedOut:
+        return (np.nan, np.nan)
+
+# Get unique user locations
+unique_locations = df['user_reported_location'].unique()
+
+# Create a dictionary to store geocoding results for unique locations
+geocoded_results = {}
+
+# Geocode unique locations and store in the dictionary
+for location in unique_locations:
+    geocoded_results[location] = geocode_location(location)
+
+# Apply the geocoding results to the original DataFrame
+df[['latitude', 'longitude']] = df['user_reported_location'].apply(lambda loc: pd.Series(geocoded_results[loc]))
+
 
 # Define the output file path
 output_file_path = r'C:\Users\benzo\repo\disinfographic\data\processed_tweets.csv'

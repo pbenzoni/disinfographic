@@ -49,9 +49,6 @@
         <div id="stats-container" class="row">
             <!-- Stats will be dynamically inserted here -->
         </div>
-    </section>
-    <section id="language-distribution" class="mt-5">
-        <h4>Language Distribution</h4>
         <div id="language-bubble-chart"></div>
     </section>
 
@@ -103,17 +100,20 @@
 
         </section>
 
-        <!-- Search all tweets-->
-        <!-- <section id="search" class="mt-5">
-            <h2>Search all tweets</h2>
-            <form action="/search" method="get">
+        <!-- Search Section -->
+        <section id="search-section" class="mt-5">
+            <h2>Search Tweets</h2>
+            <form id="search-form">
                 <div class="form-group">
-                    <input type="text" class="form-control" name="query" placeholder="Enter a search term">
+                    <input type="text" class="form-control" id="search-input" placeholder="Enter search query">
                 </div>
                 <button type="submit" class="btn btn-primary">Search</button>
             </form>
+            <div id="search-results" class="mt-4">
+                <!-- Search results will be displayed here -->
+            </div>
         </section>
- -->
+
 
     </div>
 

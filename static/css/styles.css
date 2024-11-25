@@ -383,6 +383,7 @@ h2 {
     text-align: center;
     border-radius: 8px;
     margin-bottom: 20px;
+    
 }
 
 .stat-card h3 {
@@ -404,4 +405,32 @@ h2 {
     font-family: sans-serif;
     fill: white;
     pointer-events: none;
+}
+/* Search Section Styles */
+#search-section {
+    margin-top: 40px;
+}
+
+#search-results h3 {
+    margin-top: 20px;
+}
+
+.highlight {
+    background-color: black;
+    color: white;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.tweet-text {
+    max-width: 400px;
+    word-wrap: break-word;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0,0,0,.05);
+}
+
+.table td, .table th {
+    color: black;
 }

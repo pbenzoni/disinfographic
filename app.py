@@ -1,8 +1,10 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import pandas as pd
 import ast
-from collections import Counter
+
+import re
 app = Flask(__name__)
+
 
 # Load and preprocess data
 df = pd.read_csv('data/processed_tweets.csv')
@@ -47,6 +49,7 @@ def get_language_distribution():
         'in': 'Indonesian',
         'ca': 'Catalan',
         'tl': 'Filipino',
+        'ht': 'Hausa',
         'und': 'Undefined'
     }
      #replace language codes with full names, fallback to code if not found
@@ -481,6 +484,73 @@ def summary_statistics():
 def language_distribution():
     distribution = get_language_distribution()
     return jsonify(distribution)
+
+@app.route('/api/search', methods=['GET'])
+def search():
+    search_df = df.copy()
+    search_df['hashtags'] = search_df['hashtags'].dropna().apply(ast.literal_eval)
+    search_df['user_mentions'] = search_df['user_mentions'].dropna().apply(ast.literal_eval)   
+    query_string = request.args.get('query', '')
+    if not query_string:
+        return jsonify({'error': 'No query provided'}), 400
+
+    # Parse the query and filter the DataFrame
+    try:
+        filtered_df = filter_dataframe(search_df, query_string)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+    # Convert the filtered DataFrame to a list of dictionaries
+    tweets_list = filtered_df.to_dict(orient='records')
+
+    return jsonify({'tweets': tweets_list})
+
+def filter_dataframe(df, query_string):
+    # split query string into individual words
+    queries = query_string.strip().split()
+    # Start with the full DataFrame
+    filtered_df = df
+
+    for query in queries:
+        # Regex pattern to match field-specific queries (e.g., field:value)
+        pattern = r'(\w+):"([^"]+)"|\w+:\S+|\S+'
+
+        if(':' in query):
+            # Find all matches in the query string
+            matches = re.findall(pattern, query)
+        else:
+            filtered_df = filtered_df[filtered_df['tweet_text'].str.contains(re.escape(query), case=False, na=False)]
+            continue
+        
+        for match in matches:
+            field, value = match[0], match[1]
+            if field and value:
+                # Field-specific search
+                field = field.strip()
+                value = value.strip()
+
+                if field == 'hashtags':
+                    # Filter where hashtags contain the value
+                    filtered_df = filtered_df[filtered_df['hashtags'].apply(lambda x: value in x if isinstance(x, list) else False)]
+                elif field == 'mentions':
+                    # Filter where mentions contain the value
+                    filtered_df = filtered_df[filtered_df['user_mentions'].apply(lambda x: value in x if isinstance(x, list) else False)]
+                elif field == 'user':
+                    # Filter where user_screen_name matches the value
+                    filtered_df = filtered_df[filtered_df['user_screen_name'].str.contains(re.escape(value), case=False, na=False)]
+                elif field == 'tweet_language':
+                    # Filter where language matches the value
+                    filtered_df = filtered_df[filtered_df['tweet_language'] == value]
+                elif field == 'month_year':
+                    # Filter where tweet_time matches the value (month_year - YYYY-MM) eg 2019-11-24 06:34:00 => 2019-11
+                    filtered_df = filtered_df[filtered_df['tweet_time'].dt.to_period('M').astype(str) == value]
+                else:
+                    # Unknown field, raise an error
+                    raise ValueError(f"Unknown field: {field}")
+                
+
+    return filtered_df[['tweetid', 'tweet_text', 'user_screen_name', 'tweet_language', 'like_count', 'retweet_count', 'sentiment_score', 'hashtags', 'user_mentions', 'tweet_time']]
+
 
 if __name__ == '__main__':
     app.run(debug=True)
