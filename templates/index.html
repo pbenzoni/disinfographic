@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Twitter Data Analysis</title>
+    <title>Disinfographic</title>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
     <!-- Custom CSS -->
@@ -11,18 +11,19 @@
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-        <a class="navbar-brand" href="#">Twitter Analysis</a>
+        <a class="navbar-brand" href="#" id="header-bar">Disinfographic</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" 
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item"><a class="nav-link" href="#hashtags">Hashtags</a></li>
-                <li class="nav-item"><a class="nav-link" href="#influencers">Influencers</a></li>
-                <li class="nav-item"><a class="nav-link" href="#timeline">Timeline</a></li>
-                <li class="nav-item"><a class="nav-link" href="#entities">Named Entities</a></li>
-                <li class="nav-item"><a class="nav-link" href="#top-hashtags">Top Hashtags</a></li>
+                <li class="nav-item"><a class="nav-link" href="#header-bar">Start</a></li>
+                <li class="nav-item"><a class="nav-link" href="#entities-hashtags">Hashtags</a></li>
+                <li class="nav-item"><a class="nav-link" href="#top-users">Users</a></li>
+                <li class="nav-item"><a class="nav-link" href="#top-mentions">Mentions</a></li>
+                <li class="nav-item"><a class="nav-link" href="#tweet-volume">Timeline</a></li>
+                <li class="nav-item"><a class="nav-link" href="#search-section">Search</a></li>
             </ul>
         </div>
     </nav>
@@ -31,15 +32,25 @@
     <div class="container" style="margin-top: 80px;">
         <!-- Introduction Section -->
         <section id="introduction">
-            <h1>Exploring Russian Information Operations in North Africa</h1>
-            <p class="lead">Dive into the data to uncover key hashtags, influencers, and tweet timings associated with the operation.</p>
+            <h1>When it matters most, <span class="highlight highlight-animated-teal">Meta</span> and <span class="highlight highlight-animated-teal">X</span> are pulling the plug on crucial <span class="highlight highlight-animated-bo">research tools</span></h1>
+            <p class="quote-link">
+                <a href="https://www.cjr.org/tow_center/meta-is-getting-rid-of-crowdtangle.php" target="_blank" rel="noopener noreferrer">
+                    “Meta Is Getting Rid of CrowdTangle—and Its Replacement Isn’t as Transparent or Accessible”
+                </a>
+            </p>
+            <p class="quote-link">
+                <a href="https://journals.sagepub.com/doi/10.1177/15365042241252125" target="_blank" rel="noopener noreferrer">
+                    “The Day Data Transparency Died: How Twitter/X Cut Off Access for Social Research”
+                </a>
+            </p>             
         </section>
-    <!-- Provide Background X shutting down information operations center and Facebook shutting down crowd tangle-->
 
-    <!--Provide background onm the Russia - North Africa dataset-->
+    <!--Provide background on the Russia - North Africa dataset-->
     <section id="background" class="mt-5">
-        <h2>Background</h2>
-        <p>On March 17, 2021, X announced that it had removed a network of accounts, pages, and groups linked to Russian military intelligence services that targeted countries in North Africa. The operation was part of a broader effort to disrupt the activities of the Russian military intelligence services, which have been accused of interfering in the internal affairs of other countries.</p>
+        <p class="lead-text">Explore what's lost: X's archive of Russian Information Operations in North Africa</p>
+        <p class="instruction-text"><span class="highlight highlight-animated-bo">Using the site:</span> Click on any bar or row to explore more, including co-occurring users, hashtags, times of day, and matching tweets.</p>
+
+        <p> <span class="highlight highlight-animated-teal">About this dataset:</span> On March 17, 2021, X announced that it had removed a network of accounts, pages, and groups linked to Russian military intelligence services that targeted countries in North Africa. The operation was part of a broader effort to disrupt the activities of the Russian military intelligence services, which have been accused of interfering in the internal affairs of other countries.</p>
         <p>The dataset provided contains tweets from the accounts that were part of the operation. The tweets were collected between January 1, 2020, and March 17, 2021, and include information about the content of the tweets, the accounts that posted them, and the engagement they received.</p>
     </section>
     <!--fill in section for summary stats in 3 column format -->

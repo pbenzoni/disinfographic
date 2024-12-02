@@ -433,4 +433,67 @@ h2 {
 
 .table td, .table th {
     color: black;
+}/* Highlight slide animation */
+@keyframes slideHighlight {
+    0% {
+        background-size: 0 100%;
+    }
+    100% {
+        background-size: 100% 100%;
+    }
+}
+
+.highlight-animated-teal {
+    background: linear-gradient(to right, rgba(18, 70, 64, 1) 100%, transparent 0%);
+    background-position: left;
+    background-repeat: no-repeat;
+    background-size: 0 100%;
+    padding: 2px 5px;
+    border-radius: 3px;
+    color: white;
+    animation: slideHighlight 1.5s ease forwards;
+}
+
+/* Highlight animation styles */
+.highlight-animated-bo {
+    background: linear-gradient(to right, rgb(107, 57, 0) 100%, transparent 0%);
+    background-position: left;
+    background-repeat: no-repeat;
+    background-size: 0 100%;
+    padding: 2px 5px;
+    border-radius: 3px;
+    color: white;
+    animation: slideHighlight 1.5s ease forwards;
+}
+/* Quote link styles */
+.quote-link {
+    margin-top: 10px;
+    font-style: italic;
+    font-size: 1.1rem;
+    text-align: left;
+}
+
+.quote-link a {
+    text-decoration: none;
+    color: #124640; /* Teal color to match the highlight */
+    border-bottom: 1px solid #124640; /* Underline style to mimic journalist style */
+    padding-bottom: 2px;
+    transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+.quote-link a:hover {
+    color:  rgb(107, 57, 0); /* Darker shade of teal for hover effect */
+    border-bottom: 1px solid  rgb(107, 57, 0); /* Change underline color on hover */
+}
+/* Lead text styling */
+.lead-text {
+    text-align: center; /* Center the text */
+    font-size: 1.8rem; /* Increase the font size */
+    font-weight: bold; /* Make the text bold for emphasis */
+    color:  rgb(107, 57, 0);
+    margin-bottom: 10px; /* Add some spacing at the bottom */
+    padding: 10px; /* Add padding for visual separation */
+    max-width: 90%; /* Restrict width for better readability on larger screens */
+    margin-left: auto; /* Center horizontally */
+    margin-right: auto; /* Center horizontally */
 }
