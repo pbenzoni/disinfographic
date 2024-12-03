@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Disinfographic</title>
@@ -8,21 +9,21 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
+
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
         <a class="navbar-brand" href="#" id="header-bar">Disinfographic</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" 
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item"><a class="nav-link" href="#header-bar">Start</a></li>
-                <li class="nav-item"><a class="nav-link" href="#entities-hashtags">Hashtags</a></li>
-                <li class="nav-item"><a class="nav-link" href="#top-users">Users</a></li>
-                <li class="nav-item"><a class="nav-link" href="#top-mentions">Mentions</a></li>
-                <li class="nav-item"><a class="nav-link" href="#tweet-volume">Timeline</a></li>
+                <li class="nav-item"><a class="nav-link" href="#entities-hashtags">What</a></li>
+                <li class="nav-item"><a class="nav-link" href="#top-users">Who</a></li>
+                <li class="nav-item"><a class="nav-link" href="#tweet-volume">When</a></li>
                 <li class="nav-item"><a class="nav-link" href="#search-section">Search</a></li>
             </ul>
         </div>
@@ -31,57 +32,87 @@
     <!-- Main Content -->
     <div class="container" style="margin-top: 80px;">
         <!-- Introduction Section -->
-        <section id="introduction">
-            <h1>When it matters most, <span class="highlight highlight-animated-teal">Meta</span> and <span class="highlight highlight-animated-teal">X</span> are pulling the plug on crucial <span class="highlight highlight-animated-bo">research tools</span></h1>
-            <p class="quote-link">
-                <a href="https://www.cjr.org/tow_center/meta-is-getting-rid-of-crowdtangle.php" target="_blank" rel="noopener noreferrer">
-                    “Meta Is Getting Rid of CrowdTangle—and Its Replacement Isn’t as Transparent or Accessible”
-                </a>
-            </p>
-            <p class="quote-link">
-                <a href="https://journals.sagepub.com/doi/10.1177/15365042241252125" target="_blank" rel="noopener noreferrer">
-                    “The Day Data Transparency Died: How Twitter/X Cut Off Access for Social Research”
-                </a>
-            </p>             
+        <div id="introduction">
+            <div class="row">
+                <div class="col-md-6">
+                    <h1>When it matters most, <span class="highlight highlight-animated-teal">Meta</span> and <span
+                            class="highlight highlight-animated-teal">X</span> are pulling the plug on crucial <span
+                            class="highlight highlight-animated-bo">research tools</span></h1>
+                </div>
+                <div class="col-md-6">
+                    <p class="quote-link">
+                        <a href="https://www.cjr.org/tow_center/meta-is-getting-rid-of-crowdtangle.php" target="_blank"
+                            rel="noopener noreferrer">
+                            “Meta Is Getting Rid of CrowdTangle—and Its Replacement Isn’t as Transparent or Accessible”
+                        </a>
+                    </p>
+                    <p class="quote-link">
+                        <a href="https://journals.sagepub.com/doi/10.1177/15365042241252125" target="_blank"
+                            rel="noopener noreferrer">
+                            “The Day Data Transparency Died: How Twitter/X Cut Off Access for Social Research”
+                        </a>
+                    </p>
+                </div>
+        </div>
+
+        <!--Provide background on the Russia - North Africa dataset-->
+        <section id="background" class="mt-3">
+            <p class="lead-text">Explore the what, who, and when being lost: X's archive of Russian Information
+                Operations in North Africa</p>
+            <p class="instruction-text"><span class="highlight highlight-animated-bo">Using the site:</span> Click on
+                any bar or row to explore more, including co-occurring users, hashtags, times of day, and matching
+                tweets. Colors indicate average sentiment (Green - Positive, Red - Negative)</p>
+
+            <p> <span class="highlight highlight-animated-teal">About this dataset:</span> On March 17, 2021, X
+                announced that it had removed a network of accounts, pages, and groups linked to Russian military
+                intelligence services that targeted countries in North Africa. The operation was part of a broader
+                effort to disrupt the activities of the Russian military intelligence services, which have been accused
+                of interfering in the internal affairs of other countries. The dataset provided contains tweets from the
+                accounts that were part of the operation. The tweets were
+                collected between January 1, 2020, and March 17, 2021, and include information about the content of the
+                tweets, the accounts that posted them, and the engagement they received.</p>
+        
+            <div id="stats-container" class="row mt-3">
+                <!-- Stats will be dynamically inserted here -->
+            </div>
+            <div id="stats-container2" class="row">
+                <div class="col-md-6">
+                    <h3>Languages</h3>
+                    <div id="language-bubble-chart"></div>
+                </div>
+                <div class="col-md-6">
+                    <h3>Word Length</h3>
+                    <div id="avg-word-length-chart"></div>
+                </div>
+
+
         </section>
 
-    <!--Provide background on the Russia - North Africa dataset-->
-    <section id="background" class="mt-5">
-        <p class="lead-text">Explore what's lost: X's archive of Russian Information Operations in North Africa</p>
-        <p class="instruction-text"><span class="highlight highlight-animated-bo">Using the site:</span> Click on any bar or row to explore more, including co-occurring users, hashtags, times of day, and matching tweets.</p>
-
-        <p> <span class="highlight highlight-animated-teal">About this dataset:</span> On March 17, 2021, X announced that it had removed a network of accounts, pages, and groups linked to Russian military intelligence services that targeted countries in North Africa. The operation was part of a broader effort to disrupt the activities of the Russian military intelligence services, which have been accused of interfering in the internal affairs of other countries.</p>
-        <p>The dataset provided contains tweets from the accounts that were part of the operation. The tweets were collected between January 1, 2020, and March 17, 2021, and include information about the content of the tweets, the accounts that posted them, and the engagement they received.</p>
-    </section>
-    <!--fill in section for summary stats in 3 column format -->
-
-    <section id="summary-statistics" class="mt-5">
-        <h2>Summary Statistics</h2>
-        <div id="stats-container" class="row">
-            <!-- Stats will be dynamically inserted here -->
-        </div>
-        <div id="language-bubble-chart"></div>
-    </section>
-
-    <!-- Main Content -->
-    <div class="container" style="margin-top: 80px;">
-        <!-- Named Entities and Hashtags Section -->
-        <section id="entities-hashtags" class="mt-5">
-            <div class="row">
-                <!-- <div class="col-md-6">
+        <!-- Main Content -->
+        <div class="container" style="margin-top: 80px;">
+            <!-- Named Entities and Hashtags Section -->
+            <section id="entities-hashtags" class="mt-5">
+                <h2 class="text-center"><span class="highlight highlight-animated-bo">What</span>
+                 content is being lost?
+                </h2>
+                <div class="row">
+                    <!-- <div class="col-md-6">
                     <h3>Top Named Entities</h3>
                     <div id="named-entities-chart"></div>
                 </div> -->
-                <div class="col-md-12">
-                    <h3>Top Hashtags</h3>
-                    <div id="hashtags-bar-chart"></div>
+                    <div class="col-md-12">
+                        <h3>Top Hashtags</h3>
+                        <div id="hashtags-bar-chart"></div>
+                    </div>
                 </div>
-            </div>
-        </section>
-    </div>
+            </section>
+        </div>
 
         <section id="top-users" class="mt-5">
-            <h2>Top Users</h2>
+            <h2 class="text-center"><span class="highlight highlight-animated-teal">Who</span> 
+                 are we losing track of?
+            </h2>
+            <h3>Top Users</h3>
             <table id="top-users-table" class="table table-striped table-bordered">
                 <thead>
                     <tr>
@@ -99,21 +130,24 @@
         </section>
 
         <section id="top-mentions" class="mt-5">
-            <h2>Top Mentions</h2>
+            <h3>Top Mentions</h3>
             <div id="mentions-bar-chart"></div>
         </section>
 
         <section id="tweet-volume" class="mt-5">
-            <h2>Tweet Volume Over Time</h2>
+            <h2 class="text-center"><span class="highlight highlight-animated-bo">When</span>
+             did the operation happen?
+            </h2>
             <div id="tweet-volume-chart"></div>
             <!-- Placeholder for the detailed tweets table -->
             <div id="tweet-details"></div>
-
         </section>
 
         <!-- Search Section -->
         <section id="search-section" class="mt-5">
-            <h2>Search Tweets</h2>
+            <h2 class="text-center"><span class="highlight highlight-animated-teal">Investigate further</span> through
+                search
+            </h2>
             <form id="search-form">
                 <div class="form-group">
                     <input type="text" class="form-control" id="search-input" placeholder="Enter search query">
@@ -144,6 +178,7 @@
                 });
             });
         });
-    </script>   
+    </script>
 </body>
+
 </html>

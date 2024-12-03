@@ -100,7 +100,7 @@ def get_top_hashtags():
         avg_sentiment=('sentiment_score', 'mean')
     ).reset_index()
     ht_grouped = ht_grouped.rename(columns={'hashtags_list': 'hashtag'})
-    top_hashtags = ht_grouped.sort_values(by='count', ascending=False).head(25)
+    top_hashtags = ht_grouped.sort_values(by='count', ascending=False).head(15)
     return top_hashtags.to_dict(orient='records')
 
 def get_top_mentions():
@@ -115,7 +115,7 @@ def get_top_mentions():
         avg_sentiment=('sentiment_score', 'mean')
     ).reset_index()
     mentions_grouped = mentions_grouped.rename(columns={'mentions_list': 'mention'})
-    top_mentions = mentions_grouped.sort_values(by='count', ascending=False).head(10)
+    top_mentions = mentions_grouped.sort_values(by='count', ascending=False).head(15)
     return top_mentions.to_dict(orient='records')
 
 def get_tweet_counts_by_month():
@@ -184,7 +184,7 @@ def get_tweets_by_month_year(month_year):
 
     #co-occurring hashtags
     hashtags_series = filtered_tweets['hashtags'].dropna().apply(ast.literal_eval).explode()
-    hashtag_counts = hashtags_series.value_counts().head(5)
+    hashtag_counts = hashtags_series.value_counts().head(15)
     cooccurring_hashtags = hashtag_counts.index.tolist()
 
     
@@ -484,6 +484,22 @@ def summary_statistics():
 def language_distribution():
     distribution = get_language_distribution()
     return jsonify(distribution)
+
+@app.route('/api/word_count_histogram', methods=['GET'])
+def word_count_histogram():
+    word_counts = df['word_count'].value_counts().sort_index()
+    histogram_data = word_counts.reset_index()
+    histogram_data.columns = ['word_count', 'frequency']
+    return jsonify(histogram_data.to_dict(orient='records'))
+
+@app.route('/api/avg_word_length_histogram', methods=['GET'])
+def avg_word_length_histogram():
+    avg_word_lengths = df['avg_word_length'].round(0).value_counts().sort_index()
+    histogram_data = avg_word_lengths.reset_index()
+    histogram_data.columns = ['avg_word_length', 'frequency']
+    return jsonify(histogram_data.to_dict(orient='records'))
+
+
 
 @app.route('/api/search', methods=['GET'])
 def search():

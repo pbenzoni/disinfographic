@@ -57,6 +57,14 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             createLanguageBubbleChart(data);
         });
+        
+
+    // Fetch and display average word length histogram
+    fetch('/api/avg_word_length_histogram')
+        .then(response => response.json())
+        .then(data => {
+            createHistogram(data, 'avg-word-length-chart', 'avg_word_length', 'frequency', 'Average Word Length', 'Number of Tweets');
+        });
 
     // Handle search form submission
     const searchForm = document.getElementById('search-form');
@@ -584,7 +592,7 @@ function createTimeBarChart(data, containerId, labelKey, labelName) {
         .attr('y', date => yScale(date.count))
         .attr('width', xScale.bandwidth())
         .attr('height', d => height - yScale(d.count))
-        .attr('fill', '#69b3a2')
+        .attr('fill', 'rgb(18, 70, 64)')
         .on('click', function (event, d_idx) {
             //clear existing content
             const content = document.getElementById('tweet-details');
@@ -594,7 +602,7 @@ function createTimeBarChart(data, containerId, labelKey, labelName) {
             this_date_data = data[d_idx];
 
             // Remove existing highlight
-            svg.selectAll('.time-bar').attr('fill', '#69b3a2');
+            svg.selectAll('.time-bar').attr('fill', 'rgb(18, 70, 64)');
 
             // Highlight selected bar
             d3.select(this).attr('fill', '#ff7f0e');
@@ -800,10 +808,9 @@ function displaySummaryStatistics(stats) {
         container.appendChild(col);
     });
 }
-
 function createLanguageBubbleChart(data) {
-    //set width to half of container width
-    const width = document.getElementById('language-bubble-chart').clientWidth / 2;
+    // Set width to half of container width
+    const width = document.getElementById('language-bubble-chart').clientWidth / 1.5;
 
     const height = 500;
     const buffer = 50; // Buffer area to avoid cutting off bubbles
@@ -816,36 +823,38 @@ function createLanguageBubbleChart(data) {
         .append('g')
         .attr('transform', `translate(${buffer}, ${buffer})`);
 
-   // Set minimum radius to ensure bubbles are not too small
-   const minRadius = 10;
+    // Set minimum radius to ensure bubbles are not too small
+    const minRadius = 10;
 
-   // Calculate positions along a curved diagonal path
-   const nodes = data.map((d, i) => {
-       const t = i / (data.length - 1);
-       const x = t * width * .8; // Spread along the width
-       const y = (t * height * 0.9) + (Math.sin(t * Math.PI) * height * -0.1); // Add curve to the diagonal path
-       const r = Math.max(Math.sqrt(d.count), minRadius); // Ensure a minimum radius
-       return { data: d, x, y, r };
-   });
+    // Calculate positions along a curved diagonal path
+    const nodes = data.map((d, i) => {
+        const t = i / (data.length - 1 || 1); // Avoid division by zero
+        const x = t * width * 0.8; // Spread along the width
+        const y = (t * height * 0.9) + (Math.sin(t * Math.PI) * height * -0.1); // Add curve to the diagonal path
+        const r = Math.max(Math.sqrt(d.count), minRadius); // Ensure a minimum radius
+        return { data: d, x, y, r };
+    });
 
     // Create bubbles
     const bubble = svg.selectAll('g')
         .data(nodes)
         .enter()
         .append('g')
-        .attr('transform', d => `translate(${d.x},${d.y})`);
+        // Set initial position above the chart
+        .attr('transform', d => `translate(${d.x}, ${-d.r * 2})`);
 
     // Draw egg-shaped bubbles (heavy on the bottom)
     bubble.append('ellipse')
         .attr('rx', d => d.r * 0.8)
         .attr('ry', d => d.r)
-        .attr('fill', '#69b3a2')
+        .attr('fill', 'rgb(18, 70, 64)')
+        .attr('opacity', 0.8)
         .attr('stroke', '#333')
         .attr('stroke-width', 3); // Thick border
 
     // Add labels outside, to the right of the bubble in black, including counts
     bubble.append('text')
-        .attr('x', d => d.r + 5)
+        .attr('x', d => d.r * 0.5 + 50)
         .attr('y', 0)
         .attr('text-anchor', 'start')
         .style('font-size', 12)
@@ -856,8 +865,104 @@ function createLanguageBubbleChart(data) {
     // Add tooltip
     bubble.append('title')
         .text(d => `${d.data.language}: ${d.data.count} tweets`);
+
+    // Animate the bubbles falling into position
+    bubble.transition()
+        .duration(1000)
+        .delay((d, i) => i * 200) // Stagger the animations
+        .attr('transform', d => `translate(${d.x}, ${d.y})`)
+        .ease(d3.easeBounceOut); // Add bounce effect
 }
 
+function createHistogram(data, containerId, xKey, yKey, xAxisLabel, yAxisLabel) {
+    const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+    const width = document.getElementById('language-bubble-chart').clientWidth / 1.5;
+    const height = 500 - margin.top - margin.bottom;
+
+    const svg = d3.select(`#${containerId}`)
+        .append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+    // X and Y scales
+    const x = d3.scaleBand()
+        .domain(data.map(d => d[xKey]))
+        .range([0, width])
+        .padding(0.1);
+
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d[yKey])])
+        .nice()
+        .range([height, 0]);
+
+    // X axis
+    svg.append('g')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(x))
+        .selectAll('text')
+        .attr('transform', 'translate(-10,0)rotate(-45)')
+        .style('text-anchor', 'end');
+
+    // Y axis
+    svg.append('g')
+        .call(d3.axisLeft(y));
+
+    // Draw bars
+    svg.selectAll('.bar')
+        .data(data)
+        .enter()
+        .append('rect')
+        .attr('x', d => x(d[xKey]))
+        .attr('y', d => y(d[yKey]))
+        .attr('width', x.bandwidth())
+        .attr('height', d => height - y(d[yKey]))
+        .attr('fill', 'lightgrey');
+
+    // Overlay animated ellipses
+    const ellipseGroup = svg.append('g');
+
+    ellipseGroup.selectAll('.ellipse-stack')
+        .data(data)
+        .enter()
+        .append('g')
+        .attr('class', 'ellipse-stack')
+        .attr('transform', d => `translate(${x(d[xKey]) + x.bandwidth() / 2}, 0)`) // Center ellipses
+        .each(function (d) {
+            const barHeight = height - y(d[yKey]);
+            const ellipseHeight = 10; // Height between ellipses
+            const ellipsesCount = Math.floor(barHeight / ellipseHeight);
+            const group = d3.select(this);
+
+            for (let i = 0; i < ellipsesCount; i++) {
+                group.append('ellipse')
+                    .attr('cx', 0)
+                    .attr('cy', -10) // Start above the chart
+                    .attr('rx', x.bandwidth() / 4) // Width of the ellipse
+                    .attr('ry', ellipseHeight ) // Height of the ellipse
+                    .attr('fill', 'rgb(107, 57, 0)')
+                    .attr('opacity', 0.8)
+                    .transition() // Add animation
+                    .duration(500)
+                    .delay(i * 100) // Stagger the animation for each ellipse
+                    .attr('cy', height - i * ellipseHeight - ellipseHeight / 2); // Final position
+            }
+        });
+
+    // Labels
+    svg.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('x', width / 2)
+        .attr('y', height + margin.bottom - 5)
+        .text(xAxisLabel);
+
+    svg.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', -margin.left + 15)
+        .attr('x', -height / 2)
+        .text(yAxisLabel);
+}
 
 function performSearch(query) {
     fetch('/api/search?query=' + encodeURIComponent(query))
