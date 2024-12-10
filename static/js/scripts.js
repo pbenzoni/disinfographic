@@ -498,7 +498,7 @@ function makeTableSortable(table) {
 function highlightText(text) {
     // Regular expressions to match hashtags and mentions
     const hashtagRegex = /#\w+/g;
-    const mentionRegex = /@\w+/g;
+    const mentionRegex = /@[\w+=]+/g;
 
     // Replace hashtags and mentions with highlighted versions
     return text
