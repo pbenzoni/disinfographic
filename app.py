@@ -50,7 +50,21 @@ def get_language_distribution():
         'ca': 'Catalan',
         'tl': 'Filipino',
         'ht': 'Hausa',
-        'und': 'Undefined'
+        'und': 'Undefined',
+        'et': 'Estonian',
+        'it': 'Italian',
+        'tr': 'Turkish',
+        'ro': 'Romanian',
+        'da': 'Danish',
+        'hi': 'Hindi',
+        'pl': 'Polish',
+        'de': 'German',
+        'no': 'Norwegian',
+        'nl': 'Dutch',
+        'fi': 'Finnish',
+        'cy': 'Welsh',
+        'cs': 'Czech',
+        'lt': 'Lithuanian'
     }
      #replace language codes with full names, fallback to code if not found
     lang_counts['language'] = lang_counts['language'].map(lang_map).fillna(lang_counts['language'])
